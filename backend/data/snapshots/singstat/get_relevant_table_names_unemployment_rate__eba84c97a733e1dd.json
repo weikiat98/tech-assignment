@@ -1,0 +1,113 @@
+{
+ "recorded_at": "2026-10-03T14:34:05.096949+00:00",
+ "payload": {
+  "data": [
+   {
+    "Resident Unemployment Rate Of Persons With Disabilities Aged 15 - 64 Years": {
+     "Annual, ": "M184121"
+    }
+   },
+   {
+    "Labour Market Statistics": {
+     "Quarterly, ": "M181641",
+     "Annual, ": "M183111"
+    }
+   },
+   {
+    "Unemployment Rate (End Of Period)": {
+     "Quarterly, ": "M182341",
+     "Quarterly, Seasonally Adjusted": "M182342"
+    }
+   },
+   {
+    "Unemployment Rate Aged 15 Years And Over, End June": {
+     "Annual, Seasonally Adjusted": "M182332"
+    }
+   },
+   {
+    "Average Resident Long-Term Unemployment Rate By Sex, Age And Highest Qualification Attained (HQA)": {
+     "Annual, ": "M184151"
+    }
+   },
+   {
+    "Unemployed Residents Aged 15 Years And Over By Sex": {
+     "Annual, ": "M184081"
+    }
+   },
+   {
+    "Resident Long-Term Unemployment (At Least 25 Weeks) (Annual Average)": {
+     "Annual, ": "M184141"
+    }
+   },
+   {
+    "Average Resident Unemployment Rate By Sex, Age And Highest Qualification Attained (HQA)": {
+     "Annual, ": "M183401"
+    }
+   },
+   {
+    "Unemployed Residents Aged 15 Years And Over By Sex And Planning Region, June": {
+     "Annual, ": "M184251"
+    }
+   },
+   {
+    "Distribution Of Residents With Disabilities Aged 15 - 64 By Labour Force Status": {
+     "Annual, ": "M184221"
+    }
+   },
+   {
+    "Proportion Of Residents Aged 15 - 24 Years Who Are Unemployed Or Outside The Labour Force Due To Reasons Other Than Education Or Training By Sex": {
+     "Annual, ": "M184131"
+    }
+   },
+   {
+    "Employment Rate Of Residents With Disabilities By Age": {
+     "Annual, ": "M184231"
+    }
+   },
+   {
+    "Changes In Employment By Sector, (Compared To The Previous Period)": {
+     "Quarterly, ": "M183891",
+     "Annual, ": "M183901"
+    }
+   },
+   {
+    "Key Indicators On Household Employment Income Among Resident Employed Households": {
+     "Annual, ": "M810361"
+    }
+   },
+   {
+    "Selected Averages And Ratios In The Manufacturing Sector, (Excluding Rubber Processing And Granite Quarrying)": {
+     "Annual, ": "M351381"
+    }
+   },
+   {
+    "Re-Entry Into Employment Rate": {
+     "Quarterly, ": "M181571"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Average Monthly Resignation Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184031",
+     "Annual, ": "M184051"
+    }
+   },
+   {
+    "Multifactor Productivity Using Total Employment As Labour Input: Contributions To Growth In Real GDP": {
+     "Annual, ": "M014981"
+    }
+   },
+   {
+    "Labour Force Aged 15 Years And Over, End June": {
+     "Annual, ": "M182331"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

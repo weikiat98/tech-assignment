@@ -1,0 +1,113 @@
+{
+ "recorded_at": "2026-10-03T14:34:02.740017+00:00",
+ "payload": {
+  "data": [
+   {
+    "Job Vacancies By Industry And Occupational Group (SSIC 2020) (End Of Period)": {
+     "Quarterly, ": "M184071"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)": {
+     "Annual, ": "M182081"
+    }
+   },
+   {
+    "Remuneration In Manufacturing By Industry": {
+     "Annual, ": "M354881"
+    }
+   },
+   {
+    "Compensation Of Employees By Industry At Current Prices": {
+     "Quarterly, ": "M015971",
+     "Quarterly, Seasonally Adjusted": "M015972",
+     "Annual, ": "M016011"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Employment": {
+     "Annual, ": "M355151"
+    }
+   },
+   {
+    "Average Monthly Resignation Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184031",
+     "Annual, ": "M184051"
+    }
+   },
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration Per Worker": {
+     "Annual, ": "M355191"
+    }
+   },
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Changes In Employment By Sector, (Compared To The Previous Period)": {
+     "Quarterly, ": "M183891",
+     "Annual, ": "M183901"
+    }
+   },
+   {
+    "Workers In Manufacturing By Industry": {
+     "Annual, ": "M354871"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration": {
+     "Annual, ": "M355161"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Value Added Per Worker": {
+     "Annual, ": "M355201"
+    }
+   },
+   {
+    "Manufacturing Establishments By Industry": {
+     "Annual, ": "M354841"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Value Added": {
+     "Annual, ": "M355181"
+    }
+   },
+   {
+    "Retrenched Term Contract Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183921"
+    }
+   },
+   {
+    "Key Indicators By Industry Group In All Services Industries": {
+     "Annual, ": "M601471"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Total Output": {
+     "Annual, ": "M355171"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

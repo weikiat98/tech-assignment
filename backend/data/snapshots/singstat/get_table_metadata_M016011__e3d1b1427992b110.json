@@ -1,0 +1,172 @@
+{
+ "recorded_at": "2026-10-03T14:34:07.927914+00:00",
+ "payload": {
+  "data": {
+   "records": {
+    "theme": "Economy & Prices",
+    "subject": "National Accounts",
+    "topic": "Compensation of Employees",
+    "id": "M016011",
+    "groupTitle": "Compensation Of Employees By Industry At Current Prices",
+    "title": "Compensation Of Employees By Industry At Current Prices, Annual",
+    "frequency": "Annual",
+    "adjustmentType": "Non-seasonally Adjusted",
+    "dataSource": "SINGAPORE DEPARTMENT OF STATISTICS",
+    "footnote": "The industries are classified according to SSIC 2020. For more information on national accounts methodologies, please visit Singstat website (https://www.singstat.gov.sg/find-data/explore-data-themes/economy-prices/national-accounts/related-information) to view and download related publications.",
+    "dataLastUpdated": "10/02/2026",
+    "startPeriod": "1980",
+    "endPeriod": "2025",
+    "total": 804,
+    "row": [
+     {
+      "seriesNo": "1",
+      "rowText": "Total",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1",
+      "rowText": "Manufacturing",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.2",
+      "rowText": "Construction",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3",
+      "rowText": "Utilities",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.4",
+      "rowText": "Other Goods Industries",
+      "uoM": "Million Dollars",
+      "footnote": "Comprise agriculture, fishing and quarrying."
+     },
+     {
+      "seriesNo": "1.5",
+      "rowText": "Wholesale & Retail Trade",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.5.1",
+      "rowText": "Wholesale Trade",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.5.2",
+      "rowText": "Retail Trade",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.6",
+      "rowText": "Transportation & Storage",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.7",
+      "rowText": "Accommodation & Food Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.7.1",
+      "rowText": "Accommodation",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.7.2",
+      "rowText": "Food & Beverage Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.8",
+      "rowText": "Information & Communications",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.9",
+      "rowText": "Finance & Insurance",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.10",
+      "rowText": "Real Estate, Professional Services And Administrative & Support Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.10.1",
+      "rowText": "Real Estate",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.10.2",
+      "rowText": "Professional Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.10.3",
+      "rowText": "Administrative & Support Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11",
+      "rowText": "Other Services Industries",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11.1",
+      "rowText": "Public Administration & Defence",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11.2",
+      "rowText": "Education",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11.3",
+      "rowText": "Health & Social Services",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11.4",
+      "rowText": "Arts, Entertainment & Recreation",
+      "uoM": "Million Dollars",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.11.5",
+      "rowText": "Other Services - Others",
+      "uoM": "Million Dollars",
+      "footnote": "Comprise community & personal services and activities of households as employers of domestic personnel."
+     }
+    ]
+   },
+   "generatedBy": "SingStat Table Builder",
+   "dateGenerated": "03/10/2026"
+  },
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

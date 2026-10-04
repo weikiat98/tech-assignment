@@ -1,0 +1,76 @@
+name: policy-analytics
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-policy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-REPLACE_ME_db_password}
+      POSTGRES_DB: ${POSTGRES_DB:-policy}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-policy} -d ${POSTGRES_DB:-policy}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    # internal only (not published to the host)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: ./backend
+    command: ["python", "-m", "app.db.init"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-policy}:${POSTGRES_PASSWORD:-REPLACE_ME_db_password}@postgres:5432/${POSTGRES_DB:-policy}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-policy}:${POSTGRES_PASSWORD:-REPLACE_ME_db_password}@postgres:5432/${POSTGRES_DB:-policy}
+      GOTENBERG_URL: http://gotenberg:3000
+      CORS_ORIGINS: http://localhost:8080,http://localhost:5173
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      gotenberg:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    environment:
+      API_UPSTREAM: http://api:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  locust:
+    profiles: ["load"]
+    image: locustio/locust:2.31.8
+    volumes:
+      - ./backend/tests/load:/mnt/locust
+    command: -f /mnt/locust/locustfile.py --host http://api:8000
+    ports:
+      - "8089:8089"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:

@@ -1,0 +1,109 @@
+{
+ "recorded_at": "2026-10-03T14:39:16.213829+00:00",
+ "payload": {
+  "data": [
+   {
+    "Employed Tech And Media Manpower By Sector": {
+     "Annual, ": "M651561"
+    }
+   },
+   {
+    "Employed Tech And Media Manpower By Sex": {
+     "Annual, ": "M651571"
+    }
+   },
+   {
+    "Employed Tech And Media Professionals": {
+     "Annual, ": "M651341"
+    }
+   },
+   {
+    "Full-Time Equivalent Researchers Per Million Total Population": {
+     "Annual, ": "M085901"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)": {
+     "Annual, ": "M182081"
+    }
+   },
+   {
+    "Key Indicators By Detailed Industry In All Services Industries": {
+     "Annual, ": "M601481"
+    }
+   },
+   {
+    "Employed Male Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182141"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182131"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Employed Female Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182151"
+    }
+   },
+   {
+    "Employed Male Residents Aged 15 Years And Over By Occupation And Age Group, (June)": {
+     "Annual, ": "M182181"
+    }
+   },
+   {
+    "Research And Development Manpower By Broad Researcher Type And Sex": {
+     "Annual, ": "M081311"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Occupation And Age Group, (June)": {
+     "Annual, ": "M182171"
+    }
+   },
+   {
+    "Proportion Of Youth And Adults With Information And Communications Technology (ICT) Skills By Sex, Age Group And Type Of Skills": {
+     "Annual, ": "M850851"
+    }
+   },
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   },
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Employed Female Residents Aged 15 Years And Over By Occupation And Age Group, (June)": {
+     "Annual, ": "M182191"
+    }
+   },
+   {
+    "Total Employment In UN-defined Tourism Industries": {
+     "Annual, ": "M184171"
+    }
+   },
+   {
+    "Median Gross Monthly Income From Employment (Including Employer CPF) Of Full-Time Employed Residents By Occupations And Sex, End June": {
+     "Annual, ": "M920131"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

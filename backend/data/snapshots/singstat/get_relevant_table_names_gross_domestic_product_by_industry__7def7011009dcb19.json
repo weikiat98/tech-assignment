@@ -1,0 +1,136 @@
+{
+ "recorded_at": "2026-10-03T14:34:04.388554+00:00",
+ "payload": {
+  "data": [
+   {
+    "Key Data Of Gross Domestic Product In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, Seasonally Adjusted,Quarter On Quarter": "M015922",
+     "Quarterly, Seasonally Adjusted,Annualised Growth Rate,Quarter On Quarter": "M015932",
+     "Quarterly, ": "M015941",
+     "Quarterly, Seasonally Adjusted": "M015942",
+     "Annual, ": "M015951"
+    }
+   },
+   {
+    "Gross Domestic Product Deflators (2015 = 100), By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015681",
+     "Annual, ": "M015751"
+    }
+   },
+   {
+    "Key Data Of Gross Domestic Product In Chained (2015) Dollars, By Industry (SSIC 2020), Year On Year Growth Rate": {
+     "Quarterly, ": "M015911"
+    }
+   },
+   {
+    "Contribution To Growth In Gross Domestic Product In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015671",
+     "Annual, ": "M015741"
+    }
+   },
+   {
+    "Gross Domestic Product Of Specific Industry Groups In Chained (2015) Dollars": {
+     "Quarterly, ": "M016231",
+     "Quarterly, Seasonally Adjusted": "M016232",
+     "Annual, Seasonally Adjusted": "M016222",
+     "Annual, ": "M016221"
+    }
+   },
+   {
+    "Gross Domestic Product In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015661",
+     "Quarterly, Seasonally Adjusted": "M015662",
+     "Quarterly, Seasonally Adjusted,Annualised Growth Rate,Quarter On Quarter": "M015792",
+     "Quarterly, Seasonally Adjusted,Quarter On Quarter Growth": "M015902",
+     "Annual, ": "M015721"
+    }
+   },
+   {
+    "Gross Domestic Product, Year On Year Growth Rate": {
+     "Quarterly, ": "M015631"
+    }
+   },
+   {
+    "Total Output In Manufacturing By Industry": {
+     "Annual, ": "M354891"
+    }
+   },
+   {
+    "Gross Domestic Product At Current Prices, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015651",
+     "Quarterly, Seasonally Adjusted": "M015652",
+     "Annual, ": "M015731"
+    }
+   },
+   {
+    "Gross Domestic Product Of Specific Industry Groups At Current Prices": {
+     "Quarterly, ": "M016271",
+     "Quarterly, Seasonally Adjusted": "M016272",
+     "Annual, ": "M016261",
+     "Annual, Seasonally Adjusted": "M016262"
+    }
+   },
+   {
+    "Manufacturing Output In Manufacturing By Industry": {
+     "Annual, ": "M354851"
+    }
+   },
+   {
+    "Gross Operating Surplus By Industry At Current Prices": {
+     "Quarterly, ": "M015981",
+     "Quarterly, Seasonally Adjusted": "M015982",
+     "Annual, ": "M016021"
+    }
+   },
+   {
+    "Value Added Per Worker In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015691",
+     "Annual, ": "M015761"
+    }
+   },
+   {
+    "Changes In Value Added Per Worker In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015701",
+     "Annual, ": "M015771"
+    }
+   },
+   {
+    "Share Of Nominal Gross Value Added, By Industry (SSIC 2020)": {
+     "Annual, ": "M015781"
+    }
+   },
+   {
+    "Index Of Industrial Production (2025 = 100), Year On Year Growth Rate": {
+     "Monthly, ": "M355411",
+     "Quarterly, ": "M355421",
+     "Annual, ": "M355431"
+    }
+   },
+   {
+    "Other Taxes Less Subsidies On Production By Industry At Current Prices": {
+     "Quarterly, ": "M015991",
+     "Quarterly, Seasonally Adjusted": "M015992",
+     "Annual, ": "M016031"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Total Output": {
+     "Annual, ": "M355171"
+    }
+   },
+   {
+    "Value Added Per Worker At Current Prices, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015801",
+     "Annual, ": "M015811"
+    }
+   },
+   {
+    "Changes In Value Added Per Worker At Current Prices, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015821",
+     "Annual, ": "M015831"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

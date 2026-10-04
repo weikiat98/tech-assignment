@@ -1,0 +1,118 @@
+{
+ "recorded_at": "2026-10-03T14:34:03.561225+00:00",
+ "payload": {
+  "data": [
+   {
+    "Compensation Of Employees By Industry At Current Prices": {
+     "Quarterly, ": "M015971",
+     "Quarterly, Seasonally Adjusted": "M015972",
+     "Annual, ": "M016011"
+    }
+   },
+   {
+    "Remuneration In Manufacturing By Industry": {
+     "Annual, ": "M354881"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration Per Worker": {
+     "Annual, ": "M355191"
+    }
+   },
+   {
+    "Value Added Per Worker In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015691",
+     "Annual, ": "M015761"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Average Weekly Paid Hours Worked Per Employee By Industry": {
+     "Annual, ": "M184061"
+    }
+   },
+   {
+    "Retrenched Term Contract Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183921"
+    }
+   },
+   {
+    "Value Added Per Worker At Current Prices, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015801",
+     "Annual, ": "M015811"
+    }
+   },
+   {
+    "Changes In Value Added Per Worker At Current Prices, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015821",
+     "Annual, ": "M015831"
+    }
+   },
+   {
+    "Workers In Manufacturing By Industry": {
+     "Annual, ": "M354871"
+    }
+   },
+   {
+    "Changes In Value Added Per Worker In Chained (2015) Dollars, By Industry (SSIC 2020)": {
+     "Quarterly, ": "M015701",
+     "Annual, ": "M015771"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration": {
+     "Annual, ": "M355161"
+    }
+   },
+   {
+    "Profit Before Tax By Broad Industry": {
+     "Annual, ": "M085571"
+    }
+   },
+   {
+    "Job Vacancies By Industry And Occupational Group (SSIC 2020) (End Of Period)": {
+     "Quarterly, ": "M184071"
+    }
+   },
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Value Added Per Worker": {
+     "Annual, ": "M355201"
+    }
+   },
+   {
+    "Value Added Per Actual Hour Worked In Chained (2015) Dollars By Industry": {
+     "Annual, ": "M015851",
+     "Quarterly, ": "M015871"
+    }
+   },
+   {
+    "Unit Labour Cost Index (2015 = 100)": {
+     "Quarterly, ": "M183741",
+     "Quarterly, Seasonally Adjusted": "M183742",
+     "Annual, ": "M183761"
+    }
+   },
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

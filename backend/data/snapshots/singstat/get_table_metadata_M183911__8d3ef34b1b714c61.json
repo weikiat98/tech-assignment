@@ -1,0 +1,304 @@
+{
+ "recorded_at": "2026-10-03T14:34:07.100801+00:00",
+ "payload": {
+  "data": {
+   "records": {
+    "theme": "Economy & Prices",
+    "subject": "Labour, Employment, Wages and Productivity",
+    "topic": "Redundancy",
+    "id": "M183911",
+    "groupTitle": "Retrenched Employees By Industry (SSIC 2020) And Occupational Group",
+    "title": "Retrenched Employees By Industry (SSIC 2020) And Occupational Group, Quarterly",
+    "frequency": "Quarterly",
+    "adjustmentType": "",
+    "dataSource": "MINISTRY OF MANPOWER",
+    "footnote": "Previously known as Redundancy.  1) Before 2006, data pertain to private sector establishments each with at least 25 employees.  From 2006 onwards, it includes the public sector.  2) Data are based on SSIC1996(1998-1999), SSIC2005(2000-2005), SSIC2020(2006-current).  3) Data for the three major sectors do not add up to the total as the latter includes Agriculture, Fishing, Quarrying, Utilities and Sewerage & Waste Management.  4) Data are rounded to the nearest 10.  Hence may not add up to the total.  5) Data are revised at the industry level to reflect updates in industry classification of firms based on SSIC 2020.  Revisions have also been made to the 2Q 2022 figures, following clarifications with survey respondents.",
+    "dataLastUpdated": "22/09/2026",
+    "startPeriod": "1998 1Q",
+    "endPeriod": "2026 2Q",
+    "total": 3768,
+    "row": [
+     {
+      "seriesNo": "1",
+      "rowText": "Total",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1",
+      "rowText": "Manufacturing",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.1",
+      "rowText": "Food, Beverages & Tobacco",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.2",
+      "rowText": "Paper/Rubber/Plastic Products & Printing",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.3",
+      "rowText": "Petroleum, Chemical & Pharmaceutical Products",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.4",
+      "rowText": "Fabricated Metal Products, Machinery & Equipment",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.5",
+      "rowText": "Electronic, Computer & Optical Products",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.6",
+      "rowText": "Transport Equipment",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.1.7",
+      "rowText": "Other Manufacturing Industries",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.2",
+      "rowText": "Construction",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3",
+      "rowText": "Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.1",
+      "rowText": "Wholesale And Retail Trade",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.1.1",
+      "rowText": "Wholesale Trade",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.1.2",
+      "rowText": "Retail Trade",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.2",
+      "rowText": "Transportation And Storage",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.2.1",
+      "rowText": "Land Transport & Supporting Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.2.2",
+      "rowText": "Water Transport & Supporting Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.2.3",
+      "rowText": "Air Transport & Supporting Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.2.4",
+      "rowText": "Other Transportation & Storage Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.3",
+      "rowText": "Accommodation And Food Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.3.1",
+      "rowText": "Accommodation",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.3.2",
+      "rowText": "Food & Beverage Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.4",
+      "rowText": "Information And Communications",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.4.1",
+      "rowText": "Telecommunications, Broadcasting & Publishing",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.4.2",
+      "rowText": "IT & Other Information Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.5",
+      "rowText": "Financial And Insurance Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.5.1",
+      "rowText": "Financial Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.5.2",
+      "rowText": "Insurance Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.6",
+      "rowText": "Real Estate Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.7",
+      "rowText": "Professional Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.7.1",
+      "rowText": "Legal, Accounting & Management Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.7.2",
+      "rowText": "Architectural & Engineering Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.7.3",
+      "rowText": "Other Professional Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.8",
+      "rowText": "Administrative And Support Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.8.1",
+      "rowText": "Security & Investigation",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.8.2",
+      "rowText": "Cleaning & Landscaping",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.8.3",
+      "rowText": "Other Administrative & Support Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.9",
+      "rowText": "Community, Social And Personal Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.9.1",
+      "rowText": "Public Administration & Education",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.9.2",
+      "rowText": "Health & Social Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.9.3",
+      "rowText": "Arts, Entertainment & Recreation",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.3.9.4",
+      "rowText": "Other Community, Social & Personal Services",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "1.4",
+      "rowText": "Others",
+      "uoM": "Number",
+      "footnote": "Includes Agriculture, Fishing, Quarrying, Utilities and Sewerage & Waste Management."
+     },
+     {
+      "seriesNo": "2",
+      "rowText": "Professionals, Managers, Executives & Technicians",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "3",
+      "rowText": "Clerical, Sales & Service Workers",
+      "uoM": "Number",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "4",
+      "rowText": "Production & Transport Operators, Cleaners & Labourers",
+      "uoM": "Number",
+      "footnote": ""
+     }
+    ]
+   },
+   "generatedBy": "SingStat Table Builder",
+   "dateGenerated": "03/10/2026"
+  },
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

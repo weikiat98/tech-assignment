@@ -1,0 +1,114 @@
+{
+ "recorded_at": "2026-10-03T14:34:01.846264+00:00",
+ "payload": {
+  "data": [
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Retrenched Term Contract Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183921"
+    }
+   },
+   {
+    "Re-Entry Into Employment Rate": {
+     "Quarterly, ": "M181571"
+    }
+   },
+   {
+    "Job Vacancies By Industry And Occupational Group (SSIC 2020) (End Of Period)": {
+     "Quarterly, ": "M184071"
+    }
+   },
+   {
+    "Changes In Employment By Sector, (Compared To The Previous Period)": {
+     "Quarterly, ": "M183891",
+     "Annual, ": "M183901"
+    }
+   },
+   {
+    "Remuneration In Manufacturing By Industry": {
+     "Annual, ": "M354881"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration Per Worker": {
+     "Annual, ": "M355191"
+    }
+   },
+   {
+    "Average Monthly Resignation Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184031",
+     "Annual, ": "M184051"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)": {
+     "Annual, ": "M182081"
+    }
+   },
+   {
+    "Workers In Manufacturing By Industry": {
+     "Annual, ": "M354871"
+    }
+   },
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   },
+   {
+    "Selected Averages And Ratios In The Manufacturing Sector, (Excluding Rubber Processing And Granite Quarrying)": {
+     "Annual, ": "M351381"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration": {
+     "Annual, ": "M355161"
+    }
+   },
+   {
+    "Manufacturing Establishments By Industry": {
+     "Annual, ": "M354841"
+    }
+   },
+   {
+    "Compensation Of Employees By Industry At Current Prices": {
+     "Quarterly, ": "M015971",
+     "Quarterly, Seasonally Adjusted": "M015972",
+     "Annual, ": "M016011"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Employment": {
+     "Annual, ": "M355151"
+    }
+   },
+   {
+    "Cessation Of All Business Entities By Industry": {
+     "Monthly, ": "M085451",
+     "Annual, ": "M085651"
+    }
+   },
+   {
+    "Trade Disputes Filed With Ministry Of Manpower": {
+     "Annual, ": "M180091"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

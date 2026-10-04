@@ -1,0 +1,113 @@
+{
+ "recorded_at": "2026-10-03T14:38:15.159961+00:00",
+ "payload": {
+  "data": [
+   {
+    "Employed Tech And Media Manpower By Sector": {
+     "Annual, ": "M651561"
+    }
+   },
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Key Indicators By Detailed Industry In All Services Industries": {
+     "Annual, ": "M601481"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)": {
+     "Annual, ": "M182081"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Job Vacancies By Industry And Occupational Group (SSIC 2020) (End Of Period)": {
+     "Quarterly, ": "M184071"
+    }
+   },
+   {
+    "Compensation Of Employees By Industry At Current Prices": {
+     "Quarterly, ": "M015971",
+     "Quarterly, Seasonally Adjusted": "M015972",
+     "Annual, ": "M016011"
+    }
+   },
+   {
+    "Changes In Employment By Sector, (Compared To The Previous Period)": {
+     "Quarterly, ": "M183891",
+     "Annual, ": "M183901"
+    }
+   },
+   {
+    "Key Indicators By Industry Group In All Services Industries": {
+     "Annual, ": "M601471"
+    }
+   },
+   {
+    "Average Monthly Resignation Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184031",
+     "Annual, ": "M184051"
+    }
+   },
+   {
+    "Share Of Detailed Business Cost Structure By Industry Group, Ownership And Type Of Enterprise In All Services Industries": {
+     "Annual, ": "M602101"
+    }
+   },
+   {
+    "Retrenched Term Contract Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183921"
+    }
+   },
+   {
+    "Growth Rate Of Top 3 Business Cost Drivers By Industry Group, Ownership And Type Of Enterprise In All Services Industries": {
+     "Annual, ": "M602111"
+    }
+   },
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182131"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Employment": {
+     "Annual, ": "M355151"
+    }
+   },
+   {
+    "Principal Statistics Of Manufacturing By Industry Cluster - Remuneration Per Worker": {
+     "Annual, ": "M355191"
+    }
+   },
+   {
+    "Employed Male Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182141"
+    }
+   },
+   {
+    "Employed Female Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182151"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

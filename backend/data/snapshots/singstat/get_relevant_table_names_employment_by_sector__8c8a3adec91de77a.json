@@ -1,0 +1,113 @@
+{
+ "recorded_at": "2026-10-03T14:39:14.271665+00:00",
+ "payload": {
+  "data": [
+   {
+    "Employment (Persons) By Sector, (As At Year-End)": {
+     "Annual, ": "M182841"
+    }
+   },
+   {
+    "Changes In Employment By Sector, (Compared To The Previous Period)": {
+     "Quarterly, ": "M183891",
+     "Annual, ": "M183901"
+    }
+   },
+   {
+    "Retrenched Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183911"
+    }
+   },
+   {
+    "Job Vacancies By Industry And Occupational Group (SSIC 2020) (End Of Period)": {
+     "Quarterly, ": "M184071"
+    }
+   },
+   {
+    "Total Employment In UN-defined Tourism Industries": {
+     "Annual, ": "M184171"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)": {
+     "Annual, ": "M182081"
+    }
+   },
+   {
+    "Employed Tech And Media Manpower By Sector": {
+     "Annual, ": "M651561"
+    }
+   },
+   {
+    "Average Weekly Paid Hours Worked Per Employee By Industry": {
+     "Annual, ": "M184061"
+    }
+   },
+   {
+    "Enterprise Landscape By Ownership": {
+     "Annual, ": "M601511"
+    }
+   },
+   {
+    "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183881"
+    }
+   },
+   {
+    "Key Indicators On Household Employment Income Among Resident Employed Households": {
+     "Annual, ": "M810361"
+    }
+   },
+   {
+    "Average Monthly Recruitment Rate By Industry And Occupational Group, (SSIC 2020)": {
+     "Quarterly, ": "M184021",
+     "Annual, ": "M184041"
+    }
+   },
+   {
+    "Selected Averages And Ratios In The Manufacturing Sector, (Excluding Rubber Processing And Granite Quarrying)": {
+     "Annual, ": "M351381"
+    }
+   },
+   {
+    "Government Operating Expenditure By Sector": {
+     "Quarterly, ": "M130631",
+     "Annual, ": "M130581"
+    }
+   },
+   {
+    "Total Equity Of Corporate Sector By Broad Industry (End Of Period)": {
+     "Annual, ": "M084921"
+    }
+   },
+   {
+    "Employed Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182131"
+    }
+   },
+   {
+    "Employed Male Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182141"
+    }
+   },
+   {
+    "Employed Female Residents Aged 15 Years And Over By Industry And Age Group, (June)": {
+     "Annual, ": "M182151"
+    }
+   },
+   {
+    "Retrenched Term Contract Employees By Industry (SSIC 2020) And Occupational Group": {
+     "Quarterly, ": "M183921"
+    }
+   },
+   {
+    "Compensation Of Employees By Industry At Current Prices": {
+     "Quarterly, ": "M015971",
+     "Quarterly, Seasonally Adjusted": "M015972",
+     "Annual, ": "M016011"
+    }
+   }
+  ],
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

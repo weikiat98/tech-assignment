@@ -1,0 +1,347 @@
+Tech Challenge: Agentic Policy Data Analytics Platform 
+
+Section 1: Technical Assessment 
+
+Problem Statement 
+
+Policy researchers and analysts need an intelligent system to extract, process, and analyse datasets from multiple government sources (DOS SingStat, MOM Statistics, Data.gov.sg, and internal systems). Manual processes are time-consuming and error-prone. Your challenge is to build a full-stack agentic solution that automates these workflows and generates actionable insights through an intuitive web interface. 
+
+Challenge Overview 
+
+Build an agentic policy data analytics platform that demonstrates your ability to work with autonomous agents, full-stack development, multi-cloud LLM integration, and comprehensive testing. You have complete freedom in your technical approach and implementation choices. 
+
+ 
+
+Core Requirements 
+
+What You Must Deliver: 
+
+1. Multi-Agent System 
+
+Implement at least 3 autonomous agents that collaborate to accomplish analytical tasks: 
+
+Data Coordinator Agent: Plans research workflows and delegates tasks 
+
+Data Extraction Agent: Extracts data from multiple government sources 
+
+Analytics Agent: Processes data and generates insights 
+
+Demonstrate agent orchestration, coordination, and how agents work together autonomously. 
+
+2. Government Data Integration 
+
+Extract data from at least 2 different sources: DOS SingStat, MOM Statistics, Data.gov.sg, or mock internal databases 
+
+Handle different data formats (CSV, Excel, JSON, APIs) 
+
+Implement error handling for API failures and missing data 
+
+Show data quality validation and cleaning processes 
+
+3. Intelligent Analysis & Insights 
+
+Perform meaningful statistical analysis (trends, patterns, correlations) 
+
+Generate policy-relevant insights (e.g., employment trends, sector analysis) 
+
+Create visualisations to communicate findings 
+
+Produce structured reports with data source citations 
+
+4. Full-Stack Web Application 
+
+Frontend (TypeScript + Next.js/React) 
+
+Natural language query input interface 
+
+Real-time agent activity monitoring showing reasoning steps 
+
+Interactive data visualisation dashboard 
+
+Analysis history and export functionality 
+
+Backend (Python) 
+
+RESTful API with proper error handling 
+
+Asynchronous task processing for long-running analyses 
+
+Database integration for storing datasets and results 
+
+WebSocket support for real-time updates 
+
+5. Multi-Cloud LLM Integration 
+
+Integrate at least 2 different LLM providers (AWS Bedrock, OpenAI, GCP Gemini, or Azure OpenAI) 
+
+Demonstrate fallback mechanisms between providers 
+
+Use LLMs for query interpretation, insight generation, and report creation 
+
+Show practical application of LLM capabilities in the agentic workflow 
+
+6. Agentic Framework 
+
+Use any agentic framework of your choice (LangGraph, CrewAI, AutoGen, or custom) 
+
+Implement ReAct pattern (Reasoning, Action, Observation) 
+
+Show agent decision-making and planning capabilities 
+
+Handle agent failures gracefully 
+
+7. Comprehensive Testing 
+
+Required Tests: 
+
+Unit tests for agents, tools, and API endpoints 
+
+Integration tests for multi-agent workflows 
+
+LLM-specific tests: hallucination detection, accuracy validation, consistency checks 
+
+Data quality validation tests 
+
+Performance and load testing 
+
+Test Documentation: 
+
+Test plan and methodology 
+
+Hallucination detection approach 
+
+Test results and coverage reports 
+
+8. DevOps & Deployment 
+
+Containerisation: Docker and Docker Compose setup 
+
+CI/CD Pipeline: Automated testing and deployment configuration 
+
+Environment management and secrets handling 
+
+Clear deployment documentation 
+
+ 
+
+Technology Choices 
+
+You are free to choose: 
+
+Frontend Framework: Next.js, React, or similar 
+
+Backend Framework: FastAPI, Flask, or similar 
+
+Agentic Framework: LangGraph, CrewAI, AutoGen, or custom implementation 
+
+LLM Providers: Any combination of AWS Bedrock, OpenAI, GCP Gemini, Azure OpenAI 
+
+Database: PostgreSQL, MongoDB, SQLite, or others 
+
+Data Processing Libraries: Pandas, NumPy, or alternatives 
+
+Visualisation Tools: Plotly, Chart.js, Matplotlib, or others 
+
+Testing Frameworks: pytest, Jest, or alternatives 
+
+Development Environment: Any setup that works for you 
+
+ 
+
+What We're Looking For 
+
+Development Excellence (50%) 
+
+Does your full-stack solution work end-to-end? 
+
+Can agents successfully extract, process, and analyse data? 
+
+Is the frontend intuitive and responsive? 
+
+Are the analysis results meaningful and accurate? 
+
+Is the code well-structured, maintainable, and documented? 
+
+How effectively have you integrated multiple LLM providers? 
+
+Agentic Design (25%) 
+
+How effectively do you use the agentic framework? 
+
+How well do agents collaborate and make autonomous decisions? 
+
+How thoughtfully have you designed the agent architecture? 
+
+How do you handle errors and edge cases in agent workflows? 
+
+Testing & Quality Assurance (15%) 
+
+How comprehensive is your testing suite? 
+
+How effectively do you detect hallucinations and validate accuracy? 
+
+How well do you handle data quality issues? 
+
+What's your test coverage and automation approach? 
+
+DevOps & Documentation (10%) 
+
+How well is your application containerised and deployable? 
+
+How clear and complete is your documentation? 
+
+How professional is your CI/CD setup? 
+
+Bonus Considerations: 
+
+Innovative approaches to agent design or multi-agent collaboration 
+
+Advanced analytics or predictive capabilities 
+
+Exceptional code quality and architecture 
+
+Creative solutions to data challenges 
+
+Streaming responses and real-time updates 
+
+Vector database integration for RAG capabilities 
+
+Performance optimisation and cost tracking 
+
+ 
+
+Submission Requirements 
+
+1. GitHub Repository 
+
+Include: 
+
+Source Code: Well-structured frontend and backend code 
+
+Docker Setup: Dockerfile and docker-compose.yml 
+
+Tests: Comprehensive test suite with documentation 
+
+README.md with: 
+
+Project overview and architecture 
+
+Setup instructions (step-by-step) 
+
+How to run the application locally 
+
+How to run tests 
+
+Sample queries to demonstrate capabilities 
+
+Technology choices and justifications 
+
+ARCHITECTURE.md: System design, agent workflows, database schema, design decisions 
+
+TESTING.md: Testing strategy, hallucination detection methodology, test results 
+
+DATA_SOURCES.md: Government data sources used, API documentation, mock data approach 
+
+2. Live Demonstration (20 minutes) 
+
+Show us: 
+
+End-to-End Workflow: Complete research query from input to insights 
+
+Example: "Analyse employment trends in the technology sector from 2020-2024" 
+
+Show agents extracting data from multiple sources 
+
+Display data processing and quality checks 
+
+Present analytical insights and visualisations 
+
+Architecture Walkthrough: Explain your agent design and technical decisions 
+
+Challenges & Solutions: Discuss technical challenges and how you solved them 
+
+Q&A: Answer questions about implementation 
+
+Be prepared to: 
+
+Explain your architecture and design choices 
+
+Discuss how agents collaborate and make decisions 
+
+Demonstrate error handling (API failures, missing data, ambiguous queries) 
+
+Show your testing approach and results 
+
+Discuss multi-cloud LLM integration strategy 
+
+Explain scalability and production considerations 
+
+ 
+
+Section 2: Innovation Assessment 
+
+How would you evolve your agentic policy data analytics platform to better serve policy researchers in secure government environments? What innovative features or improvements would you add, and why? 
+
+Consider aspects such as: 
+
+Agent intelligence and adaptability 
+
+Handling real-world data challenges (incomplete data, changing APIs, data privacy) 
+
+User trust and transparency in AI-generated insights 
+
+Scalability and performance for large datasets 
+
+Collaboration and knowledge sharing across research teams 
+
+Security and compliance in government contexts 
+
+Multi-cloud resilience and cost optimisation 
+
+Your response should: 
+
+Be approximately 1-2 pages in length 
+
+Include concrete examples from your implementation 
+
+Demonstrate creative thinking about the problem space 
+
+Show understanding of user needs and technical constraints 
+
+Propose specific, actionable improvements 
+
+ 
+
+Evaluation Philosophy 
+
+We value: 
+
+Working solutions over perfect code 
+
+Creative problem-solving over following templates 
+
+Clear thinking over complex architectures 
+
+Practical insights over theoretical knowledge 
+
+Your unique approach over prescribed methods 
+
+We understand that: 
+
+There are many valid ways to solve this problem 
+
+You may encounter unexpected challenges with real data sources 
+
+Time is limited and trade-offs are necessary 
+
+Real-world government data is messy and unpredictable 
+
+API access may require workarounds or mock data 
+
+Show us your best work, your way. 
+
+ 
+
+Good luck! We're excited to see your solution and how you approach building agentic AI systems for policy research. 
+
+ 

@@ -1,0 +1,40 @@
+{
+ "recorded_at": "2026-10-03T14:39:16.636938+00:00",
+ "payload": {
+  "data": {
+   "records": {
+    "theme": "Industry",
+    "subject": "InfoComm and Media",
+    "topic": "InfoComm",
+    "id": "M651561",
+    "groupTitle": "Employed Tech And Media Manpower By Sector",
+    "title": "Employed Tech And Media Manpower By Sector, Annual",
+    "frequency": "Annual",
+    "adjustmentType": "",
+    "dataSource": "INFO-COMMUNCATIONS MEDIA DEVELOPMENT AUTHORITY",
+    "footnote": "",
+    "dataLastUpdated": "20/04/2026",
+    "startPeriod": "2017",
+    "endPeriod": "2025",
+    "total": 18,
+    "row": [
+     {
+      "seriesNo": "1",
+      "rowText": "Information & Communications (I&C) Sector",
+      "uoM": "Per Cent",
+      "footnote": ""
+     },
+     {
+      "seriesNo": "2",
+      "rowText": "Non-Information & Communications (Non-I&C) Sector",
+      "uoM": "Per Cent",
+      "footnote": ""
+     }
+    ]
+   },
+   "generatedBy": "SingStat Table Builder",
+   "dateGenerated": "03/10/2026"
+  },
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}
