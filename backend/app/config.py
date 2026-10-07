@@ -9,20 +9,25 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote_plus
 
-from pydantic import model_validator
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-PLACEHOLDER_PREFIXES = ("REPLACE_ME", "sk-REPLACE_ME", "pk-lf-REPLACE_ME", "sk-lf-REPLACE_ME")
+PLACEHOLDER_PREFIXES = ("REPLACE_ME", "sk-REPLACE_ME", "pk-lf-REPLACE_ME", "sk-lf-REPLACE_ME", "tvly-REPLACE_ME")
+# Accepted spellings in LLM_PROVIDER_ORDER, mapped to the provider names in app.llm.providers.
+PROVIDER_ALIASES = {"google": "gemini"}
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 
 
 def is_configured(value: str | None) -> bool:
     """True when a setting holds a real value (not empty, not a placeholder)."""
-    return bool(value) and not any(value.startswith(p) for p in PLACEHOLDER_PREFIXES)
+    if not value or not value.strip():
+        return False
+    value = value.strip()
+    return not any(value.upper().startswith(p.upper()) for p in PLACEHOLDER_PREFIXES)
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), extra="ignore", str_strip_whitespace=True)
 
     app_env: str = "local"
     app_version: str = "0.1.0"
@@ -53,7 +58,9 @@ class Settings(BaseSettings):
     # --- Langfuse (tracing) ---------------------------------------------------------
     langfuse_public_key: str = "pk-lf-REPLACE_ME"
     langfuse_secret_key: str = "sk-lf-REPLACE_ME"
-    langfuse_host: str = "https://cloud.langfuse.com"
+    # Langfuse's own docs call this LANGFUSE_BASE_URL; LANGFUSE_HOST is the older name. Both work.
+    langfuse_host: str = Field("https://cloud.langfuse.com",
+                               validation_alias=AliasChoices("langfuse_host", "langfuse_base_url"))
     langfuse_sample_rate: float = 1.0
     langfuse_capture_io: bool = True
 
@@ -89,6 +96,8 @@ class Settings(BaseSettings):
     chaos_fail_sources: str = ""  # e.g. "singstat_mcp,datagov"
     chaos_fail_llm: str = ""  # e.g. "openai"
     chaos_inject_hallucination: bool = False
+    # PUT /admin/chaos can break a run for everyone, so it is off on shared deployments unless set explicitly.
+    chaos_admin_enabled: bool | None = None
 
     @model_validator(mode="after")
     def _compose_database_url(self) -> "Settings":
@@ -99,11 +108,18 @@ class Settings(BaseSettings):
 
     @property
     def provider_order(self) -> list[str]:
-        return [p.strip() for p in self.llm_provider_order.split(",") if p.strip()]
+        names = [p.strip().lower() for p in self.llm_provider_order.split(",") if p.strip()]
+        return list(dict.fromkeys(PROVIDER_ALIASES.get(n, n) for n in names))
+
+    @property
+    def chaos_admin_allowed(self) -> bool:
+        if self.chaos_admin_enabled is not None:
+            return self.chaos_admin_enabled
+        return self.app_env in ("local", "dev", "test", "ci")
 
     @property
     def tavily_configured(self) -> bool:
-        return is_configured(self.tavily_api_key) and not self.tavily_api_key.startswith("tvly-REPLACE_ME")
+        return is_configured(self.tavily_api_key)
 
 
 @lru_cache

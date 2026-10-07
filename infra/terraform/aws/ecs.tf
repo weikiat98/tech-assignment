@@ -9,14 +9,14 @@ resource "aws_cloudwatch_log_group" "app" {
 }
 
 locals {
-  api_image = "${aws_ecr_repository.repo["backend"].repository_url}:${var.image_tag}"
-  web_image = "${aws_ecr_repository.repo["frontend"].repository_url}:${var.image_tag}"
+  api_image  = "${aws_ecr_repository.repo["backend"].repository_url}:${var.image_tag}"
+  web_image  = "${aws_ecr_repository.repo["frontend"].repository_url}:${var.image_tag}"
   app_secret = aws_secretsmanager_secret.app.arn
   db_secret  = aws_db_instance.main.master_user_secret[0].secret_arn
 
   logs = { for k, g in aws_cloudwatch_log_group.app : k => {
     logDriver = "awslogs"
-    options = { "awslogs-group" = g.name, "awslogs-region" = var.region, "awslogs-stream-prefix" = k }
+    options   = { "awslogs-group" = g.name, "awslogs-region" = var.region, "awslogs-stream-prefix" = k }
   } }
 }
 
@@ -90,12 +90,12 @@ resource "aws_ecs_task_definition" "web" {
 }
 
 resource "aws_ecs_service" "api" {
-  name                              = "${local.name}-api"
-  cluster                           = aws_ecs_cluster.main.id
-  task_definition                   = aws_ecs_task_definition.api.arn
-  desired_count                     = 1
-  launch_type                       = "FARGATE"
-  health_check_grace_period_seconds = 90
+  name                               = "${local.name}-api"
+  cluster                            = aws_ecs_cluster.main.id
+  task_definition                    = aws_ecs_task_definition.api.arn
+  desired_count                      = 1
+  launch_type                        = "FARGATE"
+  health_check_grace_period_seconds  = 90
   deployment_minimum_healthy_percent = 0 # single replica: stop old before starting new
   deployment_maximum_percent         = 100
 

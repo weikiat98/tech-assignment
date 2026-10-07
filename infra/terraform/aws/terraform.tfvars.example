@@ -1,3 +1,5 @@
 github_repo        = "REPLACE_ME/REPLACE_ME"
 alert_email        = "REPLACE_ME@example.com"
 monthly_budget_usd = 30
+# Langfuse region of your project (US: https://us.cloud.langfuse.com, EU: https://cloud.langfuse.com)
+langfuse_host      = "https://cloud.langfuse.com"

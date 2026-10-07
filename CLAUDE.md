@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"Agentic Policy Data Analytics Platform" tech assessment (brief: `FSE_techassessment.txt`). **`plan.md` is the source of truth for every design decision** (decisions log in §18) — check it before making design choices and record new decisions there. `todo.md` lists open/unverified items (e.g. no test suite yet, `docker compose up` never run, Gemini/Langfuse never exercised live). Submission deadline: Sun 4 Oct 2026, followed by a live demo (script in plan.md §15). The folder is not yet a git repository.
+"Agentic Policy Data Analytics Platform" tech assessment (brief: `FSE_techassessment.txt`). **`plan.md` is the source of truth for every design decision** (decisions log in §18) — check it before making design choices and record new decisions there. `todo.md` lists open/unverified items (e.g. Gemini/Langfuse never exercised live, AWS not deployed). The original deadline (Sun 4 Oct 2026) no longer applies; a live demo follows (script in plan.md §15). Git remote: `github.com/weikiat98/tech-assignment` (`main`).
 
 Placeholder convention: every API key/env var in `.env.example` is `REPLACE_ME...`; the app treats any such value as "not configured" and falls back (MockLLM, keyless DuckDuckGo search, no Langfuse tracing) so it still runs end to end. Note the Windows system env may already have `OPENAI_API_KEY` set, which the app picks up (real spend) — set `LLM_MODE=mock` in `.env` to avoid that.
 
@@ -17,10 +17,11 @@ Shell is Windows; the Makefile uses the backend venv at `backend/.venv/Scripts/`
 - `make dev-web` — Vite dev server on :5173, proxies to :8000
 - `make cli Q="..."` — run one analysis in the terminal (`python -m app.cli`)
 - `make samples` — rebuild MOM sample workbook and re-record source snapshots (`app.scripts.build_samples`)
-- `make test` — `pytest -m "not contract and not llm"` with coverage. Single test: `cd backend && .venv/Scripts/pytest tests/path.py::test_name`. Markers `contract` (live external services) and `llm` (costs money) are opt-in.
+- `make test` — `pytest -m "not contract and not llm"` with coverage (offline, MockLLM, temp SQLite; `tests/conftest.py` forces placeholder keys). Single test: `cd backend && .venv/Scripts/pytest tests/path.py::test_name`. Markers `contract` (live external services) and `llm` (costs money) are opt-in; `pytest tests/eval -s` prints the hallucination-detection table used in TESTING.md.
 - `make lint` — `ruff check app tests` (line length 110, E501 ignored) + frontend `npm run lint`
 - Frontend: `npm run typecheck`, `npm run build` (`tsc -b && vite build`), `npm test` (vitest)
-- `make load` — Locust headless load test against a running stack
+- `make load-stack` then `make load` — Locust headless load test (the override `docker-compose.loadtest.yml` runs the api offline on MockLLM with tracing off, so it never hammers SingStat)
+- `python -m app.scripts.build_datagov_index` (from `backend/`) — rebuild the local Data.gov.sg catalogue index (`data/datagov_catalogue.json`); the v2 search API ignores its query
 - `make aws-plan|aws-apply|aws-deploy|aws-pause|aws-resume|aws-destroy` — ECS Fargate via Terraform (`infra/terraform/aws`, `infra/scripts`); apply/destroy touch billable resources
 
 ## Architecture

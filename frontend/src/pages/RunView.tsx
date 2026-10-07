@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
@@ -16,6 +16,7 @@ export default function RunView() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("Insights");
+  const autoSwitched = useRef(false);
   const { data: analysis } = useQuery({
     queryKey: ["analysis", id],
     queryFn: () => api.getAnalysis(id!),
@@ -31,10 +32,20 @@ export default function RunView() {
     if (last && ["final", "clarification", "error"].includes(last.type)) {
       qc.invalidateQueries({ queryKey: ["analysis", id] });
     }
-    if (last?.type === "chart" && tab === "Insights") setTab("Charts");
-  }, [last, id, qc, tab]);
+  }, [last, id, qc]);
   useEffect(() => {
-    if (analysis?.result) setTab((t) => (t === "Charts" ? "Insights" : t));
+    // While a run is live, jump to Charts once when the first chart arrives...
+    if (last?.type === "chart" && tab === "Insights" && !autoSwitched.current) {
+      autoSwitched.current = true;
+      setTab("Charts");
+    }
+  }, [last, tab]);
+  useEffect(() => {
+    // ...and back to Insights once when the result lands. Never override a tab the user picked.
+    if (analysis?.result && autoSwitched.current) {
+      autoSwitched.current = false;
+      setTab((t) => (t === "Charts" ? "Insights" : t));
+    }
   }, [analysis?.result]);
 
   const cancel = useMutation({ mutationFn: () => api.cancel(id!) });

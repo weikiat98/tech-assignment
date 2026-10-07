@@ -1,3 +1,9 @@
+import type { Data, Layout } from "plotly.js";
+
+/** Agent event payloads differ per event type and agent; components narrow them where they read them. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type EventContent = Record<string, any>;
+
 export type AnalysisStatus =
   | "queued"
   | "running"
@@ -22,7 +28,7 @@ export interface AgentEvent {
   seq: number;
   agent: string;
   type: string;
-  content: Record<string, any>;
+  content: EventContent;
   tokens: number;
   cost_usd: number;
   ts: string;
@@ -36,7 +42,7 @@ export interface Fact {
   unit: string;
   display: string;
   method: string;
-  params: Record<string, any>;
+  params: Record<string, string | number | boolean | null | string[]>;
   source_keys: string[];
   derived: boolean;
 }
@@ -45,7 +51,7 @@ export interface Chart {
   id: string;
   title: string;
   kind: string;
-  spec: { data: any[]; layout: Record<string, any> };
+  spec: { data: Data[]; layout: Partial<Layout> };
   fact_ids: string[];
   source_keys: string[];
 }
@@ -109,9 +115,23 @@ export interface ContextNote {
   injection_flagged: boolean;
 }
 
+export interface ResearchIntent {
+  topic: string;
+  sectors: string[];
+  metrics: string[];
+  start_year: number | null;
+  end_year: number | null;
+  analysis_types: string[];
+  wants_web_context: boolean;
+  uses_internal_data: boolean;
+  needs_clarification: boolean;
+  confidence: number;
+  reasoning: string;
+}
+
 export interface AnalysisResult {
   query: string;
-  intent: Record<string, any> | null;
+  intent: ResearchIntent | null;
   plan: { reasoning: string; tasks: { id: string; agent: string; description: string; source: string }[] } | null;
   report: Report | null;
   verification: Verification | null;
@@ -129,9 +149,24 @@ export interface AnalysisResult {
 }
 
 export interface AnalysisDetail extends AnalysisSummary {
-  options: Record<string, any>;
-  intent: Record<string, any> | null;
+  options: { web_context?: boolean; provider_preference?: string | null };
+  intent: ResearchIntent | null;
   plan: AnalysisResult["plan"];
   result: AnalysisResult | null;
   error: string | null;
+}
+
+export interface RuntimeConfig {
+  llm_chain: string[];
+  web_search_chain: string[];
+  langfuse_enabled: boolean;
+  offline_mode: boolean;
+  chaos: ChaosState;
+}
+
+export interface ChaosState {
+  fail_sources: string[];
+  fail_llm: string[];
+  inject_hallucination: boolean;
+  enabled?: boolean;
 }

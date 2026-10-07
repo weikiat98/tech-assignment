@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import sys
 import uuid
 
 from app.core.events import event_bus
@@ -46,7 +47,7 @@ async def main(query: str, web: bool, answer: str | None) -> None:
     async with SessionLocal() as session:
         analysis = await session.get(Analysis, run_id)
     if analysis.status == "awaiting_input":
-        reply = answer or input("\nClarification needed. Your answer: ")
+        reply = answer or await asyncio.to_thread(input, "\nClarification needed. Your answer: ")
         runner.resume(run_id, reply)
         await runner.tasks[run_id]
         async with SessionLocal() as session:
@@ -67,4 +68,5 @@ if __name__ == "__main__":
     parser.add_argument("--web", action="store_true", help="include web context")
     parser.add_argument("--answer", help="pre-supplied clarification answer")
     args = parser.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
     asyncio.run(main(args.query, args.web, args.answer))

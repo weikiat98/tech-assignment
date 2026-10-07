@@ -1,0 +1,438 @@
+{
+ "recorded_at": "2026-10-07T14:00:21.212519+00:00",
+ "payload": {
+  "data": {
+   "theme": "Economy & Prices",
+   "subject": "Labour, Employment, Wages and Productivity",
+   "topic": "Redundancy",
+   "id": "M183881",
+   "groupTitle": "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group",
+   "title": "Retrenched Permanent Employees By Industry (SSIC 2020) And Occupational Group, Quarterly",
+   "frequency": "Quarterly",
+   "adjustmentType": "",
+   "datasource": "MINISTRY OF MANPOWER",
+   "footnote": "Previously know as Retrenchment.  1) Before 2006, data pertain to private sector establishments each with at least 25 employees.  From 2006 onwards, it includes the public sector.  2) Data are rounded to the nearest 10, hence may not add up to the total.  3) Data are based on SSIC1996(1990-1999), SSIC2005(2000-2005), SSIC2020(2006-current).  4)Data are revised at the industry level to reflect updates in industry classification of firms based on SSIC 2020.  Revisions have also been made to the 2Q 2022 figures, following clarifications with survey respondents.",
+   "generatedBy": "SingStat Table Builder",
+   "dataLastUpdated": "22/09/2026",
+   "dateGenerated": "07/10/2026",
+   "offset": "0",
+   "limit": "3000",
+   "sortBy": null,
+   "timeFilter": "2018 1Q,2018 2Q,2018 3Q,2018 4Q,2019 1Q,2019 2Q,2019 3Q,2019 4Q,2020 1Q",
+   "between": null,
+   "search": null,
+   "row": [
+    {
+     "seriesNo": "1",
+     "rowText": "Total",
+     "uoM": "Number",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2018 1Q",
+       "value": "2050"
+      },
+      {
+       "key": "2018 2Q",
+       "value": "2760"
+      },
+      {
+       "key": "2018 3Q",
+       "value": "2560"
+      },
+      {
+       "key": "2018 4Q",
+       "value": "2230"
+      },
+      {
+       "key": "2019 1Q",
+       "value": "3010"
+      },
+      {
+       "key": "2019 2Q",
+       "value": "2120"
+      },
+      {
+       "key": "2019 3Q",
+       "value": "2240"
+      },
+      {
+       "key": "2019 4Q",
+       "value": "2440"
+      },
+      {
+       "key": "2020 1Q",
+       "value": "3040"
+      },
+      {
+       "key": "2020 2Q",
+       "value": "7240"
+      },
+      {
+       "key": "2020 3Q",
+       "value": "8140"
+      },
+      {
+       "key": "2020 4Q",
+       "value": "4120"
+      },
+      {
+       "key": "2021 1Q",
+       "value": "2190"
+      },
+      {
+       "key": "2021 2Q",
+       "value": "2170"
+      },
+      {
+       "key": "2021 3Q",
+       "value": "1690"
+      },
+      {
+       "key": "2021 4Q",
+       "value": "1420"
+      },
+      {
+       "key": "2022 1Q",
+       "value": "1260"
+      },
+      {
+       "key": "2022 2Q",
+       "value": "780"
+      },
+      {
+       "key": "2022 3Q",
+       "value": "1090"
+      },
+      {
+       "key": "2022 4Q",
+       "value": "2430"
+      },
+      {
+       "key": "2023 1Q",
+       "value": "3600"
+      },
+      {
+       "key": "2023 2Q",
+       "value": "3000"
+      },
+      {
+       "key": "2023 3Q",
+       "value": "3930"
+      },
+      {
+       "key": "2023 4Q",
+       "value": "3290"
+      },
+      {
+       "key": "2024 1Q",
+       "value": "2950"
+      },
+      {
+       "key": "2024 2Q",
+       "value": "3130"
+      },
+      {
+       "key": "2024 3Q",
+       "value": "2900"
+      },
+      {
+       "key": "2024 4Q",
+       "value": "3580"
+      },
+      {
+       "key": "2025 1Q",
+       "value": "3440"
+      },
+      {
+       "key": "2025 2Q",
+       "value": "3310"
+      },
+      {
+       "key": "2025 3Q",
+       "value": "3580"
+      },
+      {
+       "key": "2025 4Q",
+       "value": "3460"
+      }
+     ]
+    },
+    {
+     "seriesNo": "1.3",
+     "rowText": "Services",
+     "uoM": "Number",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2018 1Q",
+       "value": "1390"
+      },
+      {
+       "key": "2018 2Q",
+       "value": "1640"
+      },
+      {
+       "key": "2018 3Q",
+       "value": "1680"
+      },
+      {
+       "key": "2018 4Q",
+       "value": "1820"
+      },
+      {
+       "key": "2019 1Q",
+       "value": "1780"
+      },
+      {
+       "key": "2019 2Q",
+       "value": "1620"
+      },
+      {
+       "key": "2019 3Q",
+       "value": "1620"
+      },
+      {
+       "key": "2019 4Q",
+       "value": "1690"
+      },
+      {
+       "key": "2020 1Q",
+       "value": "2240"
+      },
+      {
+       "key": "2020 2Q",
+       "value": "5480"
+      },
+      {
+       "key": "2020 3Q",
+       "value": "5880"
+      },
+      {
+       "key": "2020 4Q",
+       "value": "3150"
+      },
+      {
+       "key": "2021 1Q",
+       "value": "1880"
+      },
+      {
+       "key": "2021 2Q",
+       "value": "1330"
+      },
+      {
+       "key": "2021 3Q",
+       "value": "1250"
+      },
+      {
+       "key": "2021 4Q",
+       "value": "1120"
+      },
+      {
+       "key": "2022 1Q",
+       "value": "700"
+      },
+      {
+       "key": "2022 2Q",
+       "value": "590"
+      },
+      {
+       "key": "2022 3Q",
+       "value": "1010"
+      },
+      {
+       "key": "2022 4Q",
+       "value": "1630"
+      },
+      {
+       "key": "2023 1Q",
+       "value": "1950"
+      },
+      {
+       "key": "2023 2Q",
+       "value": "2430"
+      },
+      {
+       "key": "2023 3Q",
+       "value": "3180"
+      },
+      {
+       "key": "2023 4Q",
+       "value": "2470"
+      },
+      {
+       "key": "2024 1Q",
+       "value": "2220"
+      },
+      {
+       "key": "2024 2Q",
+       "value": "2400"
+      },
+      {
+       "key": "2024 3Q",
+       "value": "2170"
+      },
+      {
+       "key": "2024 4Q",
+       "value": "2690"
+      },
+      {
+       "key": "2025 1Q",
+       "value": "2270"
+      },
+      {
+       "key": "2025 2Q",
+       "value": "2580"
+      },
+      {
+       "key": "2025 3Q",
+       "value": "2960"
+      },
+      {
+       "key": "2025 4Q",
+       "value": "2700"
+      }
+     ]
+    },
+    {
+     "seriesNo": "1.3.4",
+     "rowText": "Information And Communications",
+     "uoM": "Number",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2018 1Q",
+       "value": "200"
+      },
+      {
+       "key": "2018 2Q",
+       "value": "180"
+      },
+      {
+       "key": "2018 3Q",
+       "value": "200"
+      },
+      {
+       "key": "2018 4Q",
+       "value": "420"
+      },
+      {
+       "key": "2019 1Q",
+       "value": "210"
+      },
+      {
+       "key": "2019 2Q",
+       "value": "170"
+      },
+      {
+       "key": "2019 3Q",
+       "value": "160"
+      },
+      {
+       "key": "2019 4Q",
+       "value": "160"
+      },
+      {
+       "key": "2020 1Q",
+       "value": "240"
+      },
+      {
+       "key": "2020 2Q",
+       "value": "520"
+      },
+      {
+       "key": "2020 3Q",
+       "value": "350"
+      },
+      {
+       "key": "2020 4Q",
+       "value": "290"
+      },
+      {
+       "key": "2021 1Q",
+       "value": "370"
+      },
+      {
+       "key": "2021 2Q",
+       "value": "170"
+      },
+      {
+       "key": "2021 3Q",
+       "value": "210"
+      },
+      {
+       "key": "2021 4Q",
+       "value": "200"
+      },
+      {
+       "key": "2022 1Q",
+       "value": "190"
+      },
+      {
+       "key": "2022 2Q",
+       "value": "110"
+      },
+      {
+       "key": "2022 3Q",
+       "value": "510"
+      },
+      {
+       "key": "2022 4Q",
+       "value": "370"
+      },
+      {
+       "key": "2023 1Q",
+       "value": "470"
+      },
+      {
+       "key": "2023 2Q",
+       "value": "840"
+      },
+      {
+       "key": "2023 3Q",
+       "value": "690"
+      },
+      {
+       "key": "2023 4Q",
+       "value": "610"
+      },
+      {
+       "key": "2024 1Q",
+       "value": "580"
+      },
+      {
+       "key": "2024 2Q",
+       "value": "390"
+      },
+      {
+       "key": "2024 3Q",
+       "value": "650"
+      },
+      {
+       "key": "2024 4Q",
+       "value": "400"
+      },
+      {
+       "key": "2025 1Q",
+       "value": "380"
+      },
+      {
+       "key": "2025 2Q",
+       "value": "490"
+      },
+      {
+       "key": "2025 3Q",
+       "value": "570"
+      },
+      {
+       "key": "2025 4Q",
+       "value": "470"
+      }
+     ]
+    }
+   ]
+  },
+  "message": "",
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

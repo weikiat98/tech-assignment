@@ -17,6 +17,16 @@ export default function DemoControls() {
   const llms: string[] = data?.fail_llm ?? [];
   const toggle = (list: string[], item: string) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
+  if (data?.enabled === false) {
+    return (
+      <Card title="Demo controls (chaos)">
+        <p className="text-xs text-slate-500">
+          Disabled on this deployment. Failure toggles are available when running locally.
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <Card title="Demo controls (chaos)">
       <div className="space-y-2 text-sm">
@@ -24,6 +34,11 @@ export default function DemoControls() {
           label="SingStat MCP down"
           on={sources.includes("singstat_mcp")}
           onChange={() => update.mutate({ fail_sources: toggle(sources, "singstat_mcp") })}
+        />
+        <Toggle
+          label="SingStat REST API down"
+          on={sources.includes("singstat_rest")}
+          onChange={() => update.mutate({ fail_sources: toggle(sources, "singstat_rest") })}
         />
         <Toggle
           label="Data.gov.sg down"

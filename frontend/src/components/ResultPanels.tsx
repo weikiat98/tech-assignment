@@ -1,8 +1,14 @@
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { AgentEvent, AnalysisResult, Claim, Fact } from "../lib/types";
-import PlotlyChart from "./PlotlyChart";
+import type { AgentEvent, AnalysisResult, Chart, Claim, DatasetSummary, Fact } from "../lib/types";
+
+/** Full dataset summary once the run has finished; only key/title/quality while it is still running. */
+type DatasetView = Pick<DatasetSummary, "key" | "title" | "quality"> & Partial<DatasetSummary>;
+type PlanTask = NonNullable<AnalysisResult["plan"]>["tasks"][number];
+
+// Plotly is ~1 MB: load it only when a chart is first shown, not with the app shell.
+const PlotlyChart = lazy(() => import("./PlotlyChart"));
 import { ScoreBar, TierBadge } from "./ui";
 
 /* ---------- Report ---------- */
@@ -136,13 +142,15 @@ export function InsightsPanel({ result }: { result: AnalysisResult | null }) {
 /* ---------- Charts ---------- */
 
 export function ChartsPanel({ result, events }: { result: AnalysisResult | null; events: AgentEvent[] }) {
-  const charts = result?.charts ?? events.filter((e) => e.type === "chart").map((e) => e.content as any);
+  const charts = result?.charts ?? events.filter((e) => e.type === "chart").map((e) => e.content as Chart);
   if (!charts.length) return <Empty text="Charts appear as the analytics agent creates them." />;
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      {charts.map((c: any) => (
+      {charts.map((c) => (
         <div key={c.id} className="rounded-lg border border-slate-100 p-2">
-          <PlotlyChart chart={c} />
+          <Suspense fallback={<div className="h-[340px] animate-pulse rounded bg-slate-50" />}>
+            <PlotlyChart chart={c} />
+          </Suspense>
           <p className="px-2 pb-1 text-[11px] text-slate-500">Source: {c.source_keys.join(", ")}</p>
         </div>
       ))}
@@ -157,12 +165,12 @@ export function DataPanel({ result, events }: { result: AnalysisResult | null; e
     result?.datasets ??
     events
       .filter((e) => e.type === "quality" && e.content.report)
-      .map((e) => ({ key: e.content.dataset, title: e.content.title, quality: e.content.report }) as any);
+      .map((e): DatasetView => ({ key: e.content.dataset, title: e.content.title, quality: e.content.report }));
   const cross = events.filter((e) => e.type === "quality" && e.content.dataset === "cross-source");
   if (!datasets.length) return <Empty text="Datasets appear as the extraction agent fetches them." />;
   return (
     <div className="space-y-3">
-      {datasets.map((d: any) => (
+      {datasets.map((d: DatasetView) => (
         <div key={d.key} className="rounded-lg border border-slate-200 p-3">
           <div className="flex flex-wrap items-center gap-2">
             <code className="rounded bg-slate-100 px-1.5 text-xs">{d.key}</code>
@@ -188,7 +196,7 @@ export function DataPanel({ result, events }: { result: AnalysisResult | null; e
                 <p className="font-medium text-slate-700">Checks</p>
                 <ul className="mt-1 space-y-0.5">
                   {d.quality.issues.length === 0 && <li className="text-emerald-700">No issues found</li>}
-                  {d.quality.issues.map((i: any, idx: number) => (
+                  {d.quality.issues.map((i, idx) => (
                     <li key={idx} className={i.severity === "error" ? "text-red-700" : i.severity === "warning" ? "text-amber-700" : "text-slate-500"}>
                       [{i.check}] {i.message.slice(0, 220)}
                     </li>
@@ -255,7 +263,7 @@ export function PlanPanel({ events }: { events: AgentEvent[] }) {
         <Section title="Plan">
           <p className="mb-2 text-xs text-slate-500">{plan.reasoning}</p>
           <ol className="space-y-1.5">
-            {plan.tasks.map((t: any) => (
+            {plan.tasks.map((t: PlanTask) => (
               <li key={t.id} className="flex gap-2 rounded border border-slate-100 p-2 text-xs">
                 <b className="w-7 shrink-0">{t.id}</b>
                 <span className="w-20 shrink-0 font-medium capitalize text-slate-700">{t.agent}</span>

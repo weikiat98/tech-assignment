@@ -40,6 +40,8 @@ class RunContext:
     total_cost_usd: float = 0.0
     llm_providers_used: set[str] = field(default_factory=set)
     fallbacks: list[str] = field(default_factory=list)
+    known_titles: dict[str, str] = field(default_factory=dict)  # dataset id -> title seen in search results
+    budget_exhausted: bool = False  # set by the LLM router once RUN_LLM_BUDGET_USD is spent
     _seq: int = 0
 
     async def emit(self, agent: str, type_: str, content: dict[str, Any] | None = None,

@@ -85,7 +85,7 @@ class LLMRouter:
         tier = TASK_TIERS.get(task, "fast")
         errors: list[str] = []
         previous: str | None = None
-        for name in self.chain():
+        for name in await self._budgeted_chain(ctx, agent, task):
             breaker = self.breakers.setdefault(name, Breaker())
             if breaker.is_open:
                 errors.append(f"{name}: circuit open")
@@ -121,6 +121,28 @@ class LLMRouter:
                           0.0, False, previous, err)
                 previous = name
         raise AllProvidersFailed("; ".join(errors) or "no LLM provider configured")
+
+    async def _budgeted_chain(self, ctx: RunContext | None, agent: str, task: str) -> list[str]:
+        """The provider chain, cut to the scripted MockLLM once a run has spent its LLM budget.
+
+        RUN_LLM_BUDGET_USD caps what one analysis can cost on paid providers (the deployed URL is
+        public). Past the cap the run still finishes, on MockLLM, and the report says so.
+        """
+        chain = self.chain()
+        budget = get_settings().run_llm_budget_usd
+        if ctx is None or budget <= 0 or ctx.total_cost_usd < budget or chain == ["mock"]:
+            return chain
+        if not ctx.budget_exhausted:
+            ctx.budget_exhausted = True
+            msg = (f"LLM budget of US${budget:.2f} for this run reached (spent US${ctx.total_cost_usd:.4f}); "
+                   "remaining steps use the scripted MockLLM")
+            ctx.warnings.append(msg)
+            ctx.fallbacks.append(msg)
+            await ctx.emit(agent, "fallback", {"kind": "budget", "from": chain[0], "to": "mock", "task": task,
+                                               "budget_usd": budget, "spent_usd": round(ctx.total_cost_usd, 6)})
+        if not get_settings().llm_mock_last_resort:
+            raise AllProvidersFailed(f"LLM budget of US${budget:.2f} for this run is used up")
+        return ["mock"]
 
     def _log(self, ctx, agent, task, result: LLMResult, cost, ok, fallback_from, error) -> None:
         self.call_log.append({

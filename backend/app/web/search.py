@@ -60,9 +60,10 @@ class MockProvider:
 
     name = "mock"
     FIXTURES = [
-        SearchResult(title="Labour Market Report - Ministry of Manpower",
-                     url="https://stats.mom.gov.sg/Pages/Labour-Market-Report.aspx",
-                     snippet="Quarterly labour market report covering employment, unemployment and retrenchment.",
+        SearchResult(title="Press releases - Ministry of Manpower",
+                     url="https://www.mom.gov.sg/newsroom/press-releases",
+                     snippet="MOM press releases, including the quarterly labour market reports on employment, "
+                             "unemployment and retrenchment.",
                      trust_tier=1, provider="mock"),
         SearchResult(title="Infocomm Media Industry Statistics - IMDA",
                      url="https://www.imda.gov.sg/about-imda/research-and-statistics",

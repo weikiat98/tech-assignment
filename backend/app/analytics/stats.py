@@ -71,6 +71,61 @@ def list_series(ctx: RunContext) -> list[dict]:
     return out
 
 
+PERIODS_PER_YEAR = {"Quarterly": 4, "Monthly": 12, "Half-Yearly": 2}
+ANNUAL_SUFFIX = "~annual"
+
+
+def annualise(ctx: RunContext, ref: str, how: str = "sum") -> dict:
+    """Turn a quarterly/monthly series into an annual one and register it as a derived dataset.
+
+    Only complete years are kept (4 quarters / 12 months), so a partial latest year never looks
+    like a fall. ``sum`` suits flows (retrenchments, vacancies created); ``mean`` suits stocks and
+    rates. The derived dataset key is ``<dataset_key>~annual`` so every fact stays traceable to
+    the official table it came from.
+    """
+    if how not in ("sum", "mean"):
+        raise AnalyticsError("how must be 'sum' (flows) or 'mean' (stocks and rates)")
+    dataset_key, name = split_ref(ref)
+    record = ctx.datasets.get(dataset_key)
+    if record is None:
+        raise AnalyticsError(f"Unknown dataset '{dataset_key}'. Known: {list(ctx.datasets)}")
+    rows = record.frame[record.frame["series"] == name].dropna(subset=["value"])
+    if rows.empty:
+        raise AnalyticsError(f"Series '{name}' not in {dataset_key}")
+    freq = str(rows["frequency"].iloc[0])
+    if freq == "Annual":
+        return {"ref": ref, "how": "unchanged (already annual)", "years": sorted(rows["period"].astype(str))}
+    per_year = PERIODS_PER_YEAR.get(freq)
+    if per_year is None:
+        raise AnalyticsError(f"Cannot annualise {freq} data")
+    years = pd.to_datetime(rows["period_start"]).dt.year
+    grouped = rows.assign(year=years.values).groupby("year")["value"].agg([how, "count"])
+    complete = grouped[grouped["count"] == per_year]
+    if len(complete) < 2:
+        raise AnalyticsError(f"Fewer than 2 complete years of {freq.lower()} data for '{name}'")
+    first = rows.iloc[0]
+    derived = pd.DataFrame({
+        "source_id": first["source_id"], "dataset_id": first["dataset_id"], "series": name,
+        "series_code": first["series_code"], "period": [str(y) for y in complete.index],
+        "period_start": [pd.Timestamp(year=int(y), month=1, day=1).date() for y in complete.index],
+        "frequency": "Annual", "value": complete[how].astype(float).values, "unit": first["unit"],
+    })
+    new_key = dataset_key + ANNUAL_SUFFIX
+    existing = ctx.datasets.get(new_key)
+    if existing is not None:
+        frame = pd.concat([existing.frame[existing.frame["series"] != name], derived], ignore_index=True)
+        existing.frame = frame
+    else:
+        note = (f"Annual {'totals' if how == 'sum' else 'averages'} of {freq.lower()} values from "
+                f"{dataset_key}, complete years only (derived by this platform).")
+        ctx.add_dataset(record.model_copy(update={
+            "key": new_key, "title": f"{record.title} (annualised)", "frequency": "Annual",
+            "frame": derived, "notes": [*record.notes, note]}))
+    dropped = sorted(int(y) for y in grouped.index if y not in complete.index)
+    return {"ref": f"{new_key}::{name}", "how": how, "years": [str(y) for y in complete.index],
+            "incomplete_years_dropped": dropped}
+
+
 def _window(series: pd.Series, start: str | None, end: str | None) -> pd.Series:
     s = series
     if start:

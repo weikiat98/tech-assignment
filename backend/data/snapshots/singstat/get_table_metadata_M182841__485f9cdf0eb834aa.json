@@ -1,5 +1,5 @@
 {
- "recorded_at": "2026-10-03T14:39:14.676708+00:00",
+ "recorded_at": "2026-10-07T14:20:24.840763+00:00",
  "payload": {
   "data": {
    "records": {
@@ -99,7 +99,7 @@
     ]
    },
    "generatedBy": "SingStat Table Builder",
-   "dateGenerated": "03/10/2026"
+   "dateGenerated": "07/10/2026"
   },
   "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
  }

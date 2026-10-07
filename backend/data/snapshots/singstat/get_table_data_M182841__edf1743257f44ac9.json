@@ -1,5 +1,5 @@
 {
- "recorded_at": "2026-10-03T14:39:15.432395+00:00",
+ "recorded_at": "2026-10-07T14:06:09.083716+00:00",
  "payload": {
   "data": {
    "theme": "Economy & Prices",
@@ -14,7 +14,7 @@
    "footnote": "1) Data are primarily from administrative records, with the self-employed component estimated from the Labour Force Survey.  2) Data may not add up to the total due to rounding.  The industries are classified based on SSIC 2020 from 2008 onwards and SSIC 2005 before 2008.",
    "generatedBy": "SingStat Table Builder",
    "dataLastUpdated": "19/05/2026",
-   "dateGenerated": "03/10/2026",
+   "dateGenerated": "07/10/2026",
    "offset": "0",
    "limit": "3000",
    "sortBy": null,

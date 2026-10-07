@@ -48,10 +48,29 @@ def _jsonable(obj: Any) -> Any:
     return json.loads(json.dumps(obj, default=str))
 
 
+# Finished runs keep their in-memory context (DataFrames for the CSV export) up to this many; older ones are
+# evicted together with their LangGraph checkpoint. Exports fall back to the stored result without it.
+KEEP_FINISHED_RUNS = 25
+
+
 class TaskRunner:
     def __init__(self) -> None:
         self.contexts: dict[str, RunContext] = {}
         self.tasks: dict[str, asyncio.Task] = {}
+        self.finished: list[str] = []
+
+    def _mark_finished(self, run_id: str) -> None:
+        if run_id in self.finished:
+            self.finished.remove(run_id)
+        self.finished.append(run_id)
+        while len(self.finished) > KEEP_FINISHED_RUNS:
+            old = self.finished.pop(0)
+            self.contexts.pop(old, None)
+            self.tasks.pop(old, None)
+            try:
+                graph.checkpointer.delete_thread(old)
+            except Exception:  # noqa: BLE001 - eviction is best-effort
+                log.warning("checkpoint_evict_failed", run_id=old)
 
     def start(self, run_id: str, query: str, options: dict[str, Any]) -> None:
         ctx = RunContext(run_id=run_id, query=query, options=dict(options), sink=persist_event)
@@ -99,7 +118,7 @@ class TaskRunner:
                 interrupt_value = next((i.value for t in snapshot.tasks for i in t.interrupts), {})
                 await ctx.emit("coordinator", "clarification", interrupt_value)
                 await self._set_status(run_id, status="awaiting_input")
-                return
+                return  # stays in memory until answered
             values = snapshot.values
             result = self.build_result(ctx, values)
             outcome = values.get("outcome", "completed")
@@ -107,14 +126,17 @@ class TaskRunner:
             await self._persist_result(ctx, values, result, status)
             await ctx.emit("system", "final", {"status": status, "trace_url": lf.trace_url(run_id),
                                                "total_cost_usd": round(ctx.total_cost_usd, 5)})
+            self._mark_finished(run_id)
         except asyncio.CancelledError:
             await self._set_status(run_id, status="cancelled", finished_at=datetime.now(UTC))
             await ctx.emit("system", "status", {"state": "cancelled"})
+            self._mark_finished(run_id)
             raise
         except Exception as exc:  # noqa: BLE001 - a failed run must be recorded, not crash the server
             log.exception("analysis_failed", run_id=run_id)
             await ctx.emit("system", "error", {"message": f"{type(exc).__name__}: {exc}"})
             await self._set_status(run_id, status="failed", error=str(exc)[:2000], finished_at=datetime.now(UTC))
+            self._mark_finished(run_id)
         finally:
             await self._flush_llm_calls(run_id)
             lf.flush()

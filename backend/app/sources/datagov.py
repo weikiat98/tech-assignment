@@ -10,8 +10,11 @@ from __future__ import annotations
 
 import asyncio
 import io
+import json
 import re
 from datetime import UTC, datetime
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -23,6 +26,9 @@ from app.core.models import CANONICAL_COLUMNS, DatasetRecord
 from app.sources.base import SourceError, parse_period, parse_value, snapshots, with_retries
 
 SOURCE_ID = "datagov"
+# Local index of the catalogue (app/scripts/build_datagov_index.py): the v2 search API ignores its query.
+CATALOGUE_PATH = Path(__file__).resolve().parents[2] / "data" / "datagov_catalogue.json"
+_STOPWORDS = {"the", "and", "for", "from", "with", "by", "of", "in", "on", "per", "data", "dataset"}
 DATASET_URL = "https://data.gov.sg/datasets/{id}/view"
 _PERIOD_COLS = re.compile(r"^(year|quarter|month|period|date|financial_year|time)$", re.I)
 
@@ -45,6 +51,10 @@ class DataGovAdapter:
             return resp.json()
 
     async def search(self, query: str, limit: int = 8) -> tuple[list[dict[str, str]], str]:
+        catalogue = load_catalogue()
+        if catalogue:
+            chaos.check_source(SOURCE_ID)
+            return search_catalogue(catalogue, query, limit), "catalogue index"
         key = snapshots.key_for("search", query)
         try:
             if self.settings.offline_mode:
@@ -165,3 +175,29 @@ class DataGovAdapter:
 
 
 datagov = DataGovAdapter()
+
+
+@lru_cache(maxsize=1)
+def load_catalogue() -> list[dict[str, str]]:
+    if not CATALOGUE_PATH.exists():
+        return []
+    return json.loads(CATALOGUE_PATH.read_text(encoding="utf-8"))["datasets"]
+
+
+def search_catalogue(catalogue: list[dict[str, str]], query: str, limit: int = 8) -> list[dict[str, str]]:
+    """Keyword search: title matches count three times as much as description matches. Ties go to the
+    more general title (fewer words beyond the query), then the most recently updated dataset. Words are
+    matched on their first five letters, so 'retrenchments' finds 'Retrenched'."""
+    words = [w for w in re.findall(r"[a-z0-9]+", query.lower()) if len(w) > 2 and w not in _STOPWORDS]
+    stems = {w[:5] for w in words}
+    if not stems:
+        return []
+
+    def score(d: dict[str, str]) -> tuple[int, int, str]:
+        title = {w[:5] for w in re.findall(r"[a-z0-9]+", d["title"].lower())}
+        desc = {w[:5] for w in re.findall(r"[a-z0-9]+", d.get("description", "").lower())}
+        return 3 * len(stems & title) + len(stems & desc), -len(title - stems), d.get("last_updated", "")
+
+    ranked = sorted(((score(d), d) for d in catalogue), key=lambda x: x[0], reverse=True)
+    return [{k: d[k] for k in ("dataset_id", "title", "format", "agency", "last_updated")}
+            for sc, d in ranked[:limit] if sc[0] > 0]

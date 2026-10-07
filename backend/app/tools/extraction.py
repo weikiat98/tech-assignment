@@ -101,6 +101,9 @@ class DataGovSearchArgs(BaseModel):
 
 async def datagov_search(ctx: RunContext, query: str) -> dict:
     results, via = await datagov.search(query)
+    for r in results:  # remembered so fetch_datagov can name the dataset even if the model omits the title
+        if r.get("dataset_id") and r.get("title"):
+            ctx.known_titles[r["dataset_id"]] = r["title"]
     return {"via": via, "datasets": results}
 
 
@@ -110,7 +113,7 @@ class DataGovFetchArgs(BaseModel):
 
 
 async def fetch_datagov(ctx: RunContext, dataset_id: str, title: str | None) -> dict:
-    return await _register(ctx, await datagov.fetch(dataset_id, title))
+    return await _register(ctx, await datagov.fetch(dataset_id, title or ctx.known_titles.get(dataset_id)))
 
 
 # --- MOM Excel -------------------------------------------------------------------------

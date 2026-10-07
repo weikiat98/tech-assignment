@@ -41,12 +41,17 @@ Rules:
 Tools:
 {tools}"""
 
-EXTRACTION_EXTRA = """- For SingStat: search tables -> get metadata -> fetch only the series you need (by seriesNo).
+EXTRACTION_EXTRA = """- Work through EVERY task in your task list, in order, before finishing. Only skip a task when its source
+  fails after you tried an alternative, and say which task you skipped and why in your final answer.
+- For SingStat: search tables -> get metadata -> fetch only the series you need (by seriesNo).
+- For Data.gov.sg: search first, then fetch_datagov with the dataset_id AND the title from the search result.
 - Prefer annual tables for multi-year trends. Respect the table's startPeriod/endPeriod.
 - Every fetch is quality-checked automatically; note serious quality issues in your final answer.
 - Web pages from trust tier 3 are context only."""
 
 ANALYTICS_EXTRA = """- Start with list_series. Reference series exactly as '<dataset_key>::<series>'.
+- If the focus series is only quarterly or monthly, call annualise first (sum for flows such as retrenchments,
+  mean for levels and rates) and use the series reference it returns.
 - Compute what the question needs: levels, change, CAGR, YoY, trend; shares of a total; correlations across
   datasets when both series overlap; anomalies; forecast only if the user asked for one.
 - Create 2-4 charts that a policy reader would want (levels, indexed growth, YoY bars, scatter for correlation).

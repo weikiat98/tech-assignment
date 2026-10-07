@@ -58,10 +58,17 @@ data "aws_iam_policy_document" "github_assume" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
+    # deploy-ecs.yml runs in the GitHub environment "aws", and jobs in an environment get the subject
+    # "repo:<owner>/<repo>:environment:aws" (not ":ref:..."). Restrict that environment to main and v* tags
+    # with its deployment-branch rule in the GitHub settings.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:ref:refs/heads/main", "repo:${var.github_repo}:ref:refs/tags/v*"]
+      values = [
+        "repo:${var.github_repo}:environment:aws",
+        "repo:${var.github_repo}:ref:refs/heads/main",
+        "repo:${var.github_repo}:ref:refs/tags/v*",
+      ]
     }
   }
 }

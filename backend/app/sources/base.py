@@ -6,14 +6,17 @@ import asyncio
 import hashlib
 import json
 import re
+import time
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pandas as pd
-from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential_jitter
+from tenacity import AsyncRetrying, retry_if_not_exception_type, stop_after_attempt, wait_exponential_jitter
 
 from app.config import get_settings
+from app.core.chaos import ChaosError
 from app.core.models import CANONICAL_COLUMNS
 
 
@@ -72,13 +75,52 @@ snapshots = SnapshotStore()
 _source_semaphore = asyncio.Semaphore(get_settings().source_max_concurrency)
 
 
+class SourceBreaker:
+    """Per-transport circuit breaker shared across runs.
+
+    After ``threshold`` consecutive failed calls (each already retried), the transport is skipped
+    for ``open_seconds`` so the adapter goes straight to its fallback instead of hammering a
+    server that is down or rate-limiting us. A 403/429 opens it immediately.
+    """
+
+    def __init__(self, threshold: int = 2, open_seconds: float = 120.0) -> None:
+        self.threshold, self.open_seconds = threshold, open_seconds
+        self.failures = 0
+        self.open_until = 0.0
+
+    @property
+    def is_open(self) -> bool:
+        return time.monotonic() < self.open_until
+
+    def record(self, ok: bool, blocked: bool = False) -> None:
+        if ok:
+            self.failures, self.open_until = 0, 0.0
+            return
+        self.failures += 1
+        if blocked or self.failures >= self.threshold:
+            self.open_until = time.monotonic() + self.open_seconds
+
+    def reset(self) -> None:
+        self.failures, self.open_until = 0, 0.0
+
+
+def looks_blocked(exc: BaseException) -> bool:
+    """True for errors that mean 'stop calling for a while' (403 / 429), including inside ExceptionGroups."""
+    if isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code in (403, 429):
+        return True
+    if isinstance(exc, BaseExceptionGroup):
+        return any(looks_blocked(e) for e in exc.exceptions)
+    text = str(exc)
+    return any(s in text for s in ("403", "429", "Forbidden", "Too Many Requests"))
+
+
 async def with_retries(fn, *args, attempts: int = 3, **kwargs):
     """Run an async callable with exponential backoff + jitter, bounded by a global concurrency limit."""
     async with _source_semaphore:
         async for attempt in AsyncRetrying(
             stop=stop_after_attempt(attempts),
             wait=wait_exponential_jitter(initial=0.5, max=4),
-            retry=retry_if_exception_type(Exception),
+            retry=retry_if_not_exception_type(ChaosError),  # a simulated outage is deterministic
             reraise=True,
         ):
             with attempt:

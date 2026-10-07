@@ -70,6 +70,15 @@ async def anomalies(ctx: RunContext, ref: str) -> dict:
     return await _facts_out(ctx, stats.anomalies(ctx, ref))
 
 
+class AnnualiseArgs(BaseModel):
+    ref: str = Field(description="Quarterly or monthly series reference from list_series")
+    how: str = Field("sum", description="'sum' for flows (e.g. retrenchments), 'mean' for stocks and rates")
+
+
+async def annualise(ctx: RunContext, ref: str, how: str) -> dict:
+    return stats.annualise(ctx, ref, how)
+
+
 class ForecastArgs(BaseModel):
     ref: str
     horizon: int = Field(2, ge=1, le=3)
@@ -105,6 +114,8 @@ async def make_chart(ctx: RunContext, kind: str, refs: list[str], title: str) ->
 
 ANALYTICS_TOOLS: list[Tool] = [
     Tool("list_series", "List every available series reference with unit and period range.", NoArgs, list_series),
+    Tool("annualise", "Convert a quarterly/monthly series to annual (complete years only); returns the new "
+         "series reference to use with the other tools.", AnnualiseArgs, annualise),
     Tool("describe", "Start/end levels and peak of a series.", SeriesArgs, _series_tool(stats.describe)),
     Tool("change", "Absolute and percent change over the window.", SeriesArgs, _series_tool(stats.change)),
     Tool("cagr", "Compound annual growth rate over the window.", SeriesArgs, _series_tool(stats.cagr)),

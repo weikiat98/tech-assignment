@@ -1,4 +1,4 @@
-import type { AgentEvent, AnalysisDetail, AnalysisSummary } from "./types";
+import type { AgentEvent, AnalysisDetail, AnalysisSummary, ChaosState, RuntimeConfig } from "./types";
 
 const TOKEN_KEY = "policy-analytics-token";
 
@@ -56,7 +56,7 @@ export interface PublicConfig {
 
 export const api = {
   publicConfig: () => request<PublicConfig>("/api/v1/public-config"),
-  config: () => request<Record<string, any>>("/api/v1/config"),
+  config: () => request<RuntimeConfig>("/api/v1/config"),
   createAnalysis: (query: string, webContext: boolean) =>
     request<AnalysisSummary>("/api/v1/analyses", {
       method: "POST",
@@ -74,9 +74,9 @@ export const api = {
   cancel: (id: string) => request(`/api/v1/analyses/${id}/cancel`, { method: "POST" }),
   rerun: (id: string) => request<AnalysisSummary>(`/api/v1/analyses/${id}/rerun`, { method: "POST" }),
   remove: (id: string) => request(`/api/v1/analyses/${id}`, { method: "DELETE" }),
-  chaos: () => request<Record<string, any>>("/api/v1/admin/chaos"),
-  setChaos: (body: Record<string, any>) =>
-    request<Record<string, any>>("/api/v1/admin/chaos", { method: "PUT", body: JSON.stringify(body) }),
+  chaos: () => request<ChaosState>("/api/v1/admin/chaos"),
+  setChaos: (body: Partial<ChaosState>) =>
+    request<ChaosState>("/api/v1/admin/chaos", { method: "PUT", body: JSON.stringify(body) }),
   exportUrl: (id: string, format: string) => {
     const token = getToken();
     return `/api/v1/analyses/${id}/export?format=${format}${token ? `&token=${encodeURIComponent(token)}` : ""}`;

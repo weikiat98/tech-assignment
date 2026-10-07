@@ -73,11 +73,19 @@ async def safe_fetch(url: str) -> tuple[bytes, str, str]:
     raise UnsafeURLError("too many redirects")
 
 
+def decode_text(content: bytes) -> str:
+    """UTF-8 when valid, else Windows-1252 (common on older government pages) instead of U+FFFD noise."""
+    try:
+        return content.decode("utf-8")
+    except UnicodeDecodeError:
+        return content.decode("cp1252", errors="replace")
+
+
 def extract_content(content: bytes, content_type: str, url: str) -> dict:
     """Main text + tables + links to data files from fetched content."""
     text, tables, data_links = "", [], []
     if "html" in content_type or content.lstrip()[:15].lower().startswith((b"<!doctype", b"<html")):
-        html = content.decode("utf-8", errors="replace")
+        html = decode_text(content)
         try:
             import trafilatura
 
@@ -94,12 +102,12 @@ def extract_content(content: bytes, content_type: str, url: str) -> dict:
                 data_links.append(absolute)
     elif "csv" in content_type:
         tables = [pd.read_csv(io.BytesIO(content))]
-        text = content.decode("utf-8", errors="replace")[:20000]
+        text = decode_text(content)[:20000]
     elif "spreadsheet" in content_type or "excel" in content_type:
         tables = [pd.read_excel(io.BytesIO(content))]
         text = "\n".join(t.to_csv(index=False) for t in tables)[:20000]
     else:
-        text = content.decode("utf-8", errors="replace")[:20000]
+        text = decode_text(content)[:20000]
     return {"text": text[:50000], "tables": tables, "data_links": sorted(set(data_links))[:20]}
 
 

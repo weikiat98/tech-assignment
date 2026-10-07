@@ -1,4 +1,4 @@
-.PHONY: up down logs dev-api dev-web test lint load samples cli aws-plan aws-apply aws-deploy aws-pause aws-resume aws-destroy
+.PHONY: up down logs dev-api dev-web test lint load load-stack samples cli aws-plan aws-apply aws-deploy aws-pause aws-resume aws-destroy
 
 AWS_REGION ?= ap-southeast-1
 TF_DIR := infra/terraform/aws
@@ -26,6 +26,8 @@ test:
 lint:
 	cd backend && .venv/Scripts/ruff check app tests
 	cd frontend && npm run lint
+load-stack:    ## restart the api offline + mock LLM + no tracing, for `make load`
+	docker compose -f docker-compose.yml -f docker-compose.loadtest.yml up -d --build
 load:          ## headless load test against a running stack
 	cd backend && .venv/Scripts/locust -f tests/load/locustfile.py --host http://localhost:8000 --headless -u 50 -r 10 -t 2m --csv ../load-results
 

@@ -32,6 +32,9 @@ def interpret(query: str, options: dict[str, Any], allow_clarification: bool = T
     start, end = (years[0], years[-1]) if len(years) >= 2 else default_years()
     if len(years) == 1:
         start, end = years[0], default_years()[1]
+        # "why did X rise in 2023?" asks about an event year: include the years before it for context.
+        if re.search(rf"\b(in|during)\s+{years[0]}\b", low):
+            start = years[0] - 3
     sectors = match_sectors(query)
     metrics = match_metrics(query)
     analysis = ["trend"]
@@ -219,14 +222,35 @@ def extraction(ctx: RunContext, history: list[dict]) -> ReActStep:
 # --- Analytics (ReAct) -----------------------------------------------------------------
 
 
-def _targets(ctx: RunContext) -> tuple[list[str], list[str], str | None]:
+FLOW_WORDS = ("retrench", "vacanc", "placement", "enrol", "hire", "hiring", "layoff")
+
+
+# Metrics whose tables must be analysed in their own right (an employment table is no answer to them).
+METRIC_TITLE_WORDS = {"retrench": "retrench", "vacanc": "vacanc", "unemploy": "unemploy", "compensation": "compensation"}
+
+
+def _metric_word(ctx: RunContext) -> str | None:
+    """Title keyword of the requested metric, if the run collected a table for it."""
+    for metric in ctx.intent.metrics:
+        for stem, word in METRIC_TITLE_WORDS.items():
+            if stem in metric.lower() and any(word in r.title.lower() for r in ctx.datasets.values()):
+                return word
+    return None
+
+
+def _targets(ctx: RunContext, annual_only: bool = True) -> tuple[list[str], list[str], str | None]:
     """(focus series refs, total refs, primary dataset key)."""
     intent = ctx.intent
     focus, totals, primary = [], [], None
+    word = _metric_word(ctx)
     for key, rec in ctx.datasets.items():
         if rec.source_id not in ("singstat", "internal") or rec.frame is None or rec.frame.empty:
             continue
-        if rec.frame["frequency"].iloc[0] != "Annual":
+        if word and word not in rec.title.lower():
+            continue
+        if annual_only and rec.frame["frequency"].iloc[0] != "Annual":
+            continue
+        if not annual_only and (rec.frame["frequency"].iloc[0] == "Annual" or f"{key}~annual" in ctx.datasets):
             continue
         names = list(dict.fromkeys(rec.frame["series"].tolist()))
         for name in names:
@@ -251,6 +275,13 @@ def analytics(ctx: RunContext, history: list[dict]) -> ReActStep:
         return _step("List the series the extraction agent collected.", "list_series", {})
     focus, totals, primary = _targets(ctx)
     if not focus:
+        sub_annual, _, _ = _targets(ctx, annual_only=False)
+        if sub_annual:
+            flow = any(w in m.lower() for m in intent.metrics for w in FLOW_WORDS)
+            how = "sum" if flow else "mean"
+            return _step(f"Only {sub_annual[0].split('::')[0]} has the focus sector, at sub-annual frequency. "
+                         f"Annualise it ({'flows are summed' if flow else 'levels are averaged'}) using "
+                         f"complete years only.", "annualise", {"ref": sub_annual[0], "how": how})
         return _step("No annual series match the focus sectors; nothing to compute.", "finish",
                      final="No suitable series found for analysis.")
     main = focus[0]
@@ -303,7 +334,9 @@ def write(ctx: RunContext, attempt: int, feedback: list[str]) -> ReportDraft:
     intent = ctx.intent
     focus, _, _ = _targets(ctx)
     main = focus[0] if focus else ""
-    name = main.split("::")[1] if main else "the selected series"
+    sector = main.split("::")[1] if main else "the selected series"
+    # Say what is being measured when it is not employment, e.g. "Retrenchments in Information And ...".
+    name = f"Retrenchments in {sector}" if main and _metric_word(ctx) == "retrench" else sector
     findings: list[Claim] = []
 
     def claim(text: str, *facts) -> None:
@@ -352,7 +385,14 @@ def write(ctx: RunContext, attempt: int, feedback: list[str]) -> ReportDraft:
                             fact_ids=bad.fact_ids, source_keys=bad.source_keys)
 
     implications = []
-    if cagr:
+    if cagr and _metric_word(ctx) == "retrench":
+        # For retrenchments a fall is good news, so the employment wording below would mislead.
+        text = (f"Rising retrenchments in {sector} point to a need for job-matching and reskilling support for "
+                "affected workers; monitor the next data release for confirmation." if cagr.value > 0 else
+                f"Retrenchments in {sector} have eased over the period; confirm with the next data release "
+                "before scaling back support for affected workers.")
+        implications.append(Claim(text=text, fact_ids=[cagr.id], source_keys=cagr.source_keys))
+    elif cagr:
         direction = "growth" if cagr.value > 0 else "contraction"
         implications.append(Claim(
             text=f"Sustained {direction} in {name} should inform workforce planning and training capacity for "

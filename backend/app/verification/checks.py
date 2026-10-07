@@ -20,6 +20,11 @@ _NUMBER = re.compile(r"(?<![\w.])[-+]?\d{1,3}(?:,\d{3})+(?:\.\d+)?%?|(?<![\w.])[
 
 def extract_numbers(text: str) -> list[tuple[float, int, bool]]:
     """(value, decimals, is_percent) for each number token."""
+    return [(value, decimals, pct) for value, decimals, pct, _ in extract_number_tokens(text)]
+
+
+def extract_number_tokens(text: str) -> list[tuple[float, int, bool, str]]:
+    """(value, decimals, is_percent, raw token) for each number token."""
     out = []
     for token in _NUMBER.findall(text):
         pct = token.endswith("%")
@@ -29,12 +34,13 @@ def extract_numbers(text: str) -> list[tuple[float, int, bool]]:
         except ValueError:
             continue
         decimals = len(raw.split(".")[1]) if "." in raw else 0
-        out.append((value, decimals, pct))
+        out.append((value, decimals, pct, token))
     return out
 
 
-def _is_year(value: float, decimals: int, pct: bool) -> bool:
-    return not pct and decimals == 0 and 1900 <= value <= 2100
+def _is_year(value: float, decimals: int, pct: bool, token: str = "") -> bool:
+    # "1,910" is a count, not a year: years are never written with a thousands separator.
+    return not pct and decimals == 0 and "," not in token and 1900 <= value <= 2100
 
 
 def _allowed(facts: list[Fact]) -> list[float]:
@@ -86,13 +92,13 @@ def check_claim(claim: Claim, section: str, ctx: RunContext, all_facts: bool = F
     if bad_sources:
         problems.append(f"cites unknown sources {bad_sources}")
 
-    numbers = extract_numbers(claim.text)
+    numbers = extract_number_tokens(claim.text)
     lo, hi = _year_bounds(ctx)
     pool = list(ctx.facts.values()) if all_facts else cited
     allowed = _allowed(pool)
     numeric_claim = False
-    for value, decimals, pct in numbers:
-        if _is_year(value, decimals, pct):
+    for value, decimals, pct, token in numbers:
+        if _is_year(value, decimals, pct, token):
             if not lo <= value <= hi:
                 problems.append(f"year {int(value)} outside the data range {lo}-{hi}")
             continue
@@ -105,9 +111,15 @@ def check_claim(claim: Claim, section: str, ctx: RunContext, all_facts: bool = F
 
     present = _known_sectors(ctx)
     low = claim.text.lower()
+    cited_labels = " | ".join(f.label for f in cited).lower()
     for sector in ALL_SECTOR_NAMES:
-        if sector.lower() in low and sector not in present:
+        if sector.lower() not in low:
+            continue
+        if sector not in present:
             problems.append(f"sector '{sector}' is not in the collected data")
+        elif cited and numeric_claim and sector.lower() not in cited_labels:
+            # Right numbers, wrong subject: "Construction grew 14.4%" citing an ICT fact.
+            problems.append(f"sector '{sector}' is not what the cited facts measure")
     return ClaimCheck(claim=claim.text, section=section, passed=not problems, problems=problems)
 
 

@@ -9,6 +9,7 @@ MCP server (verified 3 Oct 2026): https://chatwithsandra.singstat.gov.sg/mcp
 from __future__ import annotations
 
 import json
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -18,12 +19,72 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
 from app.config import get_settings
-from app.core.chaos import chaos
+from app.core.chaos import ChaosError, chaos
 from app.core.models import CANONICAL_COLUMNS, DatasetRecord
-from app.sources.base import SourceError, parse_period, parse_value, snapshots, with_retries, year_filter
+from app.sources.base import (
+    SourceBreaker,
+    SourceError,
+    looks_blocked,
+    parse_period,
+    parse_value,
+    snapshots,
+    with_retries,
+    year_filter,
+)
 
 SOURCE_ID = "singstat"
 TABLE_URL = "https://tablebuilder.singstat.gov.sg/table/TS/{rid}"
+# Shared across runs: a blocked or down transport is skipped for a while instead of retried on every call.
+BREAKERS = {"mcp": SourceBreaker(), "rest": SourceBreaker()}
+_STOPWORDS = {"by", "the", "and", "of", "in", "for", "to", "a", "an", "on", "at", "per", "from", "with"}
+_FREQ_SUFFIX = re.compile(r",\s*(Annual|Half-Yearly|Quarterly|Monthly|Weekly|Daily)$", re.I)
+
+
+def rank_rest_tables(query: str, records: list[dict[str, Any]], limit: int = 15) -> list[dict[str, Any]]:
+    """Rank Table Builder search records by how many query keywords their title contains.
+
+    The REST search is a plain substring match on the whole keyword string, so the MCP-style
+    query "employment by sector" misses "Employment (Persons) By Sector". The fallback searches
+    each keyword separately and ranks the union here. Derived tables ("changes in", "compared to")
+    rank below level tables unless the query asks for changes.
+    """
+    tokens = [t for t in re.findall(r"[a-z0-9]+", query.lower()) if t not in _STOPWORDS and len(t) > 1]
+    wants_change = any(t.startswith("change") for t in tokens)
+
+    def score(r: dict[str, Any]) -> tuple[float, int]:
+        title = r.get("title", "").lower()
+        hits = sum(1 for t in tokens if t in title)
+        if not wants_change and ("change" in title or "compared to" in title):
+            hits -= 0.5
+        return hits, -len(title)
+
+    unique = {r["id"]: r for r in records if r.get("id")}
+    ranked = sorted(unique.values(), key=score, reverse=True)
+    return [r for r in ranked if score(r)[0] > 0][:limit]
+
+
+def rest_search_keywords(query: str, max_keywords: int = 3) -> list[str]:
+    """The most distinctive keywords of a query (longest first), each searched separately."""
+    tokens = [t for t in re.findall(r"[a-z0-9]+", query.lower()) if t not in _STOPWORDS and len(t) > 2]
+    return sorted(dict.fromkeys(tokens), key=len, reverse=True)[:max_keywords] or [query]
+
+
+def to_mcp_search_shape(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """REST records -> the MCP's {'data': [{title: {'Annual, ': id}}]} shape."""
+    groups: dict[str, dict[str, str]] = {}
+    for r in records:
+        title = r.get("title") or r["id"]
+        m = _FREQ_SUFFIX.search(title)
+        base, freq = (title[:m.start()], m.group(1).title()) if m else (title, "")
+        groups.setdefault(base, {})[f"{freq}, " if freq else ""] = r["id"]
+    return {"data": [{title: variants} for title, variants in groups.items()]}
+
+
+def _root_message(exc: BaseException) -> str:
+    """Unwrap ExceptionGroups (the MCP client raises them) to the first real error message."""
+    while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
+        exc = exc.exceptions[0]
+    return f"{type(exc).__name__}: {exc}" if not str(exc).startswith(type(exc).__name__) else str(exc)
 
 
 class FetchProvenance(dict):
@@ -59,12 +120,13 @@ class SingStatMCPAdapter:
         base = self.settings.singstat_rest_base
         async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "policy-analytics/0.1"}) as client:
             if tool == "get_relevant_table_names":
-                resp = await client.get(f"{base}/resourceid", params={
-                    "keyword": arguments["query_text"], "searchOption": "all"})
-                resp.raise_for_status()
-                records = (resp.json().get("Data") or {}).get("records", [])
-                return {"data": [{r.get("title", r.get("id")): {r.get("frequency", "") + ", ": r.get("id")}}
-                                 for r in records]}
+                query = arguments["query_text"]
+                records: list[dict[str, Any]] = []
+                for keyword in rest_search_keywords(query):
+                    resp = await client.get(f"{base}/resourceid", params={"keyword": keyword, "searchOption": "all"})
+                    resp.raise_for_status()
+                    records += (resp.json().get("Data") or {}).get("records") or []
+                return to_mcp_search_shape(rank_rest_tables(query, records))
             if tool == "get_table_metadata":
                 resp = await client.get(f"{base}/metadata/{arguments['resource_id']}")
                 resp.raise_for_status()
@@ -85,13 +147,23 @@ class SingStatMCPAdapter:
         errors: list[str] = []
         if not self.settings.offline_mode:
             for via, fn in (("mcp", self._call_mcp), ("rest", self._call_rest)):
+                breaker = BREAKERS[via]
+                if breaker.is_open:
+                    errors.append(f"{via}: skipped (circuit open after repeated failures)")
+                    continue
                 try:
-                    payload = await with_retries(fn, tool, arguments, attempts=2 if via == "rest" else 3)
-                    snapshots.save_json(SOURCE_ID, name, key, payload)
+                    payload = await with_retries(fn, tool, arguments, attempts=2)
+                    breaker.record(True)
+                    # A fallback response only fills a gap: it must not replace the primary (MCP) recording,
+                    # whose search ranking the offline demo relies on.
+                    if via == "mcp" or snapshots.load_json(SOURCE_ID, name, key) is None:
+                        snapshots.save_json(SOURCE_ID, name, key, payload)
                     reason = "; ".join(errors) or None
                     return payload, FetchProvenance(via=via, fallback_reason=reason, recorded_at=None)
                 except Exception as exc:  # noqa: BLE001 - every failure moves to the next fallback
-                    errors.append(f"{via}: {type(exc).__name__}: {str(exc)[:160]}")
+                    if not isinstance(exc, ChaosError):  # a demo outage must not leave the breaker open afterwards
+                        breaker.record(False, blocked=looks_blocked(exc))
+                    errors.append(f"{via}: {_root_message(exc)[:160]}")
         cached = snapshots.load_json(SOURCE_ID, name, key)
         if cached is None:
             raise SourceError("SingStat unavailable and no snapshot recorded. " + "; ".join(errors))

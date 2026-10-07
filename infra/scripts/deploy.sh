@@ -30,15 +30,15 @@ docker push "$ECR_FRONTEND:$TAG"
 # New task-definition revision = current one with only the image swapped.
 new_revision() {
   local service="$1" container="$2" image="$3"
-  local current
+  local current taskdef
   current=$(aws ecs describe-services --cluster "$CLUSTER" --services "$service" --region "$REGION" \
     --query 'services[0].taskDefinition' --output text)
-  aws ecs describe-task-definition --task-definition "$current" --region "$REGION" --query taskDefinition \
-    | jq --arg c "$container" --arg img "$image" \
+  # Passed inline rather than via a temp file: under Git Bash on Windows, /tmp and the AWS CLI's file:// differ.
+  taskdef=$(aws ecs describe-task-definition --task-definition "$current" --region "$REGION" --query taskDefinition \
+    | jq -c --arg c "$container" --arg img "$image" \
       '.containerDefinitions |= map(if .name == $c then .image = $img else . end)
-       | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
-    > /tmp/taskdef.json
-  aws ecs register-task-definition --cli-input-json file:///tmp/taskdef.json --region "$REGION" \
+       | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+  aws ecs register-task-definition --cli-input-json "$taskdef" --region "$REGION" \
     --query 'taskDefinition.taskDefinitionArn' --output text
 }
 

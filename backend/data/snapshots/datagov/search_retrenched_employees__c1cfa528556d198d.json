@@ -1,5 +1,5 @@
 {
- "recorded_at": "2026-10-03T14:39:18.226379+00:00",
+ "recorded_at": "2026-10-07T14:20:28.058408+00:00",
  "payload": {
   "code": 0,
   "data": {
@@ -9,7 +9,7 @@
      "createdAt": "2024-10-27T23:35:58+08:00",
      "name": "Primary Inputs By Final Demand (Supply, Use and Input-Output Tables 2017)",
      "status": "active",
-     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nData Last Updated: 25/03/2026\r\n\r\nUpdate Frequency: Annual\r\n\r\nSurvey period: Supply, Use and Input-Output Tables 2017\r\n\r\nFootnotes: Each row shows how much primary inputs (includes imports, taxes on products, and income components of value added) are required to meet final demand.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/17287",
+     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nSurvey period: Supply, Use and Input-Output Tables 2017\r\n\r\nFootnotes: Each row shows how much primary inputs (includes imports, taxes on products, and income components of value added) are required to meet final demand.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/17287",
      "format": "CSV",
      "lastUpdatedAt": "2026-03-25T00:00:00+08:00",
      "managedByAgencyName": "Singapore Department of Statistics"
@@ -55,7 +55,7 @@
      "createdAt": "2024-10-24T16:10:27+08:00",
      "name": "People Requiring Interventions Against Neglected Tropical Diseases, Annual",
      "status": "active",
-     "description": "Source: MINISTRY OF HEALTH\r\n\r\nData Last Updated: 16/12/2025\r\n\r\nUpdate Frequency: Annual\r\n\r\nFootnotes: Data are used for SDG 3.3.5 'Number of people requiring interventions against neglected tropical diseases'. Please refer to the Sustainable Development Goals (SDG) Global Metadata (https://unstats.un.org/sdgs/metadata) for more information on SDG 3.3.5.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/TS/M870521",
+     "description": "Source: MINISTRY OF HEALTH\r\n\r\nFootnotes: Data are used for SDG 3.3.5 'Number of people requiring interventions against neglected tropical diseases'. Please refer to the Sustainable Development Goals (SDG) Global Metadata (https://unstats.un.org/sdgs/metadata) for more information on SDG 3.3.5.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/TS/M870521",
      "format": "CSV",
      "lastUpdatedAt": "2025-12-16T00:00:00+08:00",
      "managedByAgencyName": "Singapore Department of Statistics",
@@ -67,7 +67,7 @@
      "createdAt": "2024-10-24T17:13:20+08:00",
      "name": "Malay Resident Population by Age Group, Dialect Group and Sex (Census of Population 2010)",
      "status": "active",
-     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nData Last Updated: 22/03/2016\r\n\r\nUpdate Frequency: 10 years\r\n\r\nSurvey period: Census of Population 2010\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/8533",
+     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nSurvey period: Census of Population 2010\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/8533",
      "format": "CSV",
      "lastUpdatedAt": "2016-03-22T00:00:00+08:00",
      "managedByAgencyName": "Singapore Department of Statistics"
@@ -77,7 +77,7 @@
      "createdAt": "2024-10-22T16:18:11+08:00",
      "name": "Percentage Of A-Level Students With At Least 3 H2 Passes And Pass In General Paper Or Knowledge And Inquiry, Annual",
      "status": "active",
-     "description": "Source: MINISTRY OF EDUCATION\r\n\r\nData Last Updated: 22/06/2026\r\n\r\nUpdate Frequency: Annual\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/TS/M920231",
+     "description": "Source: MINISTRY OF EDUCATION\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/TS/M920231",
      "format": "CSV",
      "lastUpdatedAt": "2026-06-22T00:00:00+08:00",
      "managedByAgencyName": "Singapore Department of Statistics",
@@ -89,7 +89,7 @@
      "createdAt": "2024-10-24T19:14:03+08:00",
      "name": "Resident Population Aged 15 Years and Over by Planning Area and Highest Qualification Attained (Census of Population 2010)",
      "status": "active",
-     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nData Last Updated: 24/03/2016\r\n\r\nUpdate Frequency: 10 years\r\n\r\nSurvey period: Census of Population 2010\r\n\r\nFootnotes: Notes: Planning areas refer to areas demarcated in the Urban Redevelopment Authority's Master Plan 2008. Data exclude residents who were students.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/8629",
+     "description": "Source: SINGAPORE DEPARTMENT OF STATISTICS\r\n\r\nSurvey period: Census of Population 2010\r\n\r\nFootnotes: Notes: Planning areas refer to areas demarcated in the Urban Redevelopment Authority's Master Plan 2008. Data exclude residents who were students.\r\n\r\nAdapted from: https://tablebuilder.singstat.gov.sg/table/CT/8629",
      "format": "CSV",
      "lastUpdatedAt": "2016-03-24T00:00:00+08:00",
      "managedByAgencyName": "Singapore Department of Statistics"
@@ -118,8 +118,8 @@
     }
    ],
    "pages": 465,
-   "rowCount": 4642,
-   "totalRowCount": 4642
+   "rowCount": 4643,
+   "totalRowCount": 4643
   },
   "errorMsg": ""
  }

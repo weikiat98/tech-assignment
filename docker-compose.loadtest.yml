@@ -1,0 +1,15 @@
+# Load-test overrides (make load-stack): measure the platform, not upstream services.
+#   docker compose -f docker-compose.yml -f docker-compose.loadtest.yml up -d --build
+# - offline snapshots: no traffic to SingStat / Data.gov.sg (the SingStat MCP rate-limits bursts)
+# - scripted MockLLM and mock web search: no LLM spend or latency
+# - tracing off: protects the Langfuse Hobby quota
+# - rate limit raised: Locust sends everything from one IP
+services:
+  api:
+    environment:
+      OFFLINE_MODE: "true"
+      LLM_MODE: mock
+      WEB_SEARCH_PROVIDER: mock
+      LANGFUSE_PUBLIC_KEY: pk-lf-REPLACE_ME
+      LANGFUSE_SECRET_KEY: sk-lf-REPLACE_ME
+      RATE_LIMIT: 10000/minute

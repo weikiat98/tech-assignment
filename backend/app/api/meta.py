@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 
 import httpx
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from app.api.schemas import ChaosUpdate
@@ -103,15 +103,18 @@ async def sources_health():
 
 @router.get("/admin/chaos")
 async def get_chaos():
-    return chaos.as_dict()
+    return {**chaos.as_dict(), "enabled": get_settings().chaos_admin_allowed}
 
 
 @router.put("/admin/chaos")
 async def set_chaos(update: ChaosUpdate):
+    if not get_settings().chaos_admin_allowed:
+        raise HTTPException(status_code=403, detail="Chaos toggles are disabled on this deployment "
+                                                    "(set CHAOS_ADMIN_ENABLED=true to allow them)")
     if update.fail_sources is not None:
         chaos.fail_sources = set(update.fail_sources)
     if update.fail_llm is not None:
         chaos.fail_llm = set(update.fail_llm)
     if update.inject_hallucination is not None:
         chaos.inject_hallucination = update.inject_hallucination
-    return chaos.as_dict()
+    return {**chaos.as_dict(), "enabled": True}

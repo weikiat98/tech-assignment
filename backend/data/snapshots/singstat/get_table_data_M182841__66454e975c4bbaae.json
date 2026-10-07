@@ -1,0 +1,190 @@
+{
+ "recorded_at": "2026-10-07T14:05:35.810502+00:00",
+ "payload": {
+  "data": {
+   "theme": "Economy & Prices",
+   "subject": "Labour, Employment, Wages and Productivity",
+   "topic": "Employment",
+   "id": "M182841",
+   "groupTitle": "Employment (Persons) By Sector, (As At Year-End)",
+   "title": "Employment (Persons) By Sector, (As At Year-End), Annual",
+   "frequency": "Annual",
+   "adjustmentType": "",
+   "datasource": "MINISTRY OF MANPOWER",
+   "footnote": "1) Data are primarily from administrative records, with the self-employed component estimated from the Labour Force Survey.  2) Data may not add up to the total due to rounding.  The industries are classified based on SSIC 2020 from 2008 onwards and SSIC 2005 before 2008.",
+   "generatedBy": "SingStat Table Builder",
+   "dataLastUpdated": "19/05/2026",
+   "dateGenerated": "07/10/2026",
+   "offset": "0",
+   "limit": "3000",
+   "sortBy": null,
+   "timeFilter": "2017,2018,2019,2020,2021,2022,2023,2024",
+   "between": null,
+   "search": null,
+   "row": [
+    {
+     "seriesNo": "1",
+     "rowText": "Manufacturing",
+     "uoM": "Thousand",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2017",
+       "value": "489.3"
+      },
+      {
+       "key": "2018",
+       "value": "488"
+      },
+      {
+       "key": "2019",
+       "value": "487.2"
+      },
+      {
+       "key": "2020",
+       "value": "451.2"
+      },
+      {
+       "key": "2021",
+       "value": "449.9"
+      },
+      {
+       "key": "2022",
+       "value": "485.2"
+      },
+      {
+       "key": "2023",
+       "value": "487"
+      },
+      {
+       "key": "2024",
+       "value": "486"
+      }
+     ]
+    },
+    {
+     "seriesNo": "2",
+     "rowText": "Construction",
+     "uoM": "Thousand",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2017",
+       "value": "450.3"
+      },
+      {
+       "key": "2018",
+       "value": "443.6"
+      },
+      {
+       "key": "2019",
+       "value": "454.5"
+      },
+      {
+       "key": "2020",
+       "value": "403.6"
+      },
+      {
+       "key": "2021",
+       "value": "405.7"
+      },
+      {
+       "key": "2022",
+       "value": "497.1"
+      },
+      {
+       "key": "2023",
+       "value": "526.2"
+      },
+      {
+       "key": "2024",
+       "value": "539.5"
+      }
+     ]
+    },
+    {
+     "seriesNo": "3",
+     "rowText": "Services",
+     "uoM": "Thousand",
+     "footnote": "",
+     "columns": [
+      {
+       "key": "2017",
+       "value": "2703.4"
+      },
+      {
+       "key": "2018",
+       "value": "2757"
+      },
+      {
+       "key": "2019",
+       "value": "2816.5"
+      },
+      {
+       "key": "2020",
+       "value": "2722.5"
+      },
+      {
+       "key": "2021",
+       "value": "2749.7"
+      },
+      {
+       "key": "2022",
+       "value": "2883.1"
+      },
+      {
+       "key": "2023",
+       "value": "2948.3"
+      },
+      {
+       "key": "2024",
+       "value": "2994.3"
+      }
+     ]
+    },
+    {
+     "seriesNo": "4",
+     "rowText": "Others",
+     "uoM": "Thousand",
+     "footnote": "Includes agriculture, fishing, quarrying, utilities, sewerage and waste management",
+     "columns": [
+      {
+       "key": "2017",
+       "value": "26.4"
+      },
+      {
+       "key": "2018",
+       "value": "26.2"
+      },
+      {
+       "key": "2019",
+       "value": "26.1"
+      },
+      {
+       "key": "2020",
+       "value": "26"
+      },
+      {
+       "key": "2021",
+       "value": "24.3"
+      },
+      {
+       "key": "2022",
+       "value": "24.4"
+      },
+      {
+       "key": "2023",
+       "value": "24.8"
+      },
+      {
+       "key": "2024",
+       "value": "26.3"
+      }
+     ]
+    }
+   ]
+  },
+  "message": "",
+  "dataUsage": "Only information directly returned in this response originates from DOS / SANDRA. Do not attribute derived values, calculations, or inferences to DOS / SANDRA."
+ }
+}

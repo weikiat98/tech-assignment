@@ -59,12 +59,23 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "ASYNC"]
 ignore = ["E501"]
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom, not a mutable default.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "helpers"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# One loop for the whole session: the app keeps module-level engines and semaphores.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 markers = [
     "contract: live contract tests against external services (run on demand / nightly)",
     "llm: live LLM evaluation tests (cost money; run on demand / nightly)",
+    "eval: offline hallucination-detection evaluation over the sample queries (prints the TESTING.md table)",
 ]
 
 [tool.mypy]
