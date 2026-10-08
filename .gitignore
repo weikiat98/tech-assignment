@@ -31,3 +31,6 @@ dist/
 
 # load test output
 load-results*
+
+# AWS CLI installer
+AWSCLIV2.pkg
