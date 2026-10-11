@@ -46,6 +46,15 @@ resource "aws_iam_openid_connect_provider" "github" {
   thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
 }
 
+locals {
+  github_owner = split("/", var.github_repo)[0]
+  github_name  = split("/", var.github_repo)[1]
+  github_subject_prefixes = compact([
+    "repo:${var.github_repo}",
+    var.github_owner_id != "" && var.github_repo_id != "" ? "repo:${local.github_owner}@${var.github_owner_id}/${local.github_name}@${var.github_repo_id}" : "",
+  ])
+}
+
 data "aws_iam_policy_document" "github_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -60,15 +69,19 @@ data "aws_iam_policy_document" "github_assume" {
     }
     # deploy-ecs.yml runs in the GitHub environment "aws", and jobs in an environment get the subject
     # "repo:<owner>/<repo>:environment:aws" (not ":ref:..."). Restrict that environment to main and v* tags
-    # with its deployment-branch rule in the GitHub settings.
+    # with its deployment-branch rule in the GitHub settings. Repos using GitHub's immutable-ID subject
+    # format send "repo:<owner>@<owner_id>/<repo>@<repo_id>:..." instead; set github_owner_id and
+    # github_repo_id to trust that form, pinned to this exact repository.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values = [
-        "repo:${var.github_repo}:environment:aws",
-        "repo:${var.github_repo}:ref:refs/heads/main",
-        "repo:${var.github_repo}:ref:refs/tags/v*",
-      ]
+      values = flatten([
+        for prefix in local.github_subject_prefixes : [
+          "${prefix}:environment:aws",
+          "${prefix}:ref:refs/heads/main",
+          "${prefix}:ref:refs/tags/v*",
+        ]
+      ])
     }
   }
 }

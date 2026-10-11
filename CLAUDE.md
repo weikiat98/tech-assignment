@@ -10,7 +10,7 @@ Placeholder convention: every API key/env var in `.env.example` is `REPLACE_ME..
 
 ## Commands
 
-Shell is Windows; the Makefile uses the backend venv at `backend/.venv/Scripts/`.
+Developed on Windows; the Makefile auto-detects the backend venv layout (`backend/.venv/Scripts/` on Windows, `backend/.venv/bin/` on macOS/Linux). macOS setup steps are in README.md and DEPLOYMENT.md.
 
 - `make up` / `make down` / `make logs` — full stack via docker compose (postgres+pgvector, gotenberg, migrate, api :8000, frontend/nginx :8080)
 - `make dev-api` — backend with reload on :8000 (SQLite `backend/local.db` when no Postgres URL)

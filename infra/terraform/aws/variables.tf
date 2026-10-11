@@ -14,6 +14,18 @@ variable "github_repo" {
   default     = "REPLACE_ME/REPLACE_ME"
 }
 
+variable "github_owner_id" {
+  description = "Numeric GitHub owner id, for repos whose OIDC subject uses immutable ids (empty = not used)"
+  type        = string
+  default     = ""
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub repository id, for repos whose OIDC subject uses immutable ids (empty = not used)"
+  type        = string
+  default     = ""
+}
+
 variable "alert_email" {
   description = "Email for AWS Budgets alerts"
   type        = string

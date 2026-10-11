@@ -44,6 +44,15 @@ flowchart LR
 
 Prerequisites: Docker Desktop (or Docker Engine with Compose v2).
 
+macOS (Intel or Apple Silicon), using [Homebrew](https://brew.sh):
+
+```bash
+brew install --cask docker     # Docker Desktop; open it once and wait until it says "running"
+brew install git make          # make is only needed for the Makefile shortcuts
+```
+
+The commands below are the same on macOS, Linux and Windows (Git Bash).
+
 ```bash
 git clone https://github.com/weikiat98/tech-assignment.git
 cd tech-assignment
@@ -72,17 +81,21 @@ counts as not configured.
 | `OFFLINE_MODE=true` | Serve every source from the recorded snapshots in `backend/data/snapshots/` |
 | `APP_ACCESS_TOKEN` | Require a shared token on `/api` and `/ws` (set it on any public deployment) |
 
-> On Windows, system-wide `OPENAI_API_KEY`/`GOOGLE_API_KEY` variables are picked up by a locally run
-> backend (not by Docker, which only reads `.env`). Set `LLM_MODE=mock` while developing to avoid spend.
+> System-wide `OPENAI_API_KEY`/`GOOGLE_API_KEY` variables (Windows environment variables, or `export`s in
+> your macOS `~/.zshrc`) are picked up by a locally run backend (not by Docker, which only reads `.env`).
+> Set `LLM_MODE=mock` while developing to avoid spend.
 
 ## Local development (without Docker)
+
+Prerequisites on macOS: `brew install python@3.12 node@22` (Python 3.11 or newer; Node 22). On macOS
+and Linux use `python3` to create the venv and `.venv/bin/` wherever this guide says `.venv/Scripts/`.
 
 ```bash
 # backend: Python 3.11+
 cd backend
-python -m venv .venv
+python -m venv .venv                         # macOS/Linux: python3 -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"        # macOS/Linux: .venv/bin/pip
-.venv/Scripts/uvicorn app.main:app --reload --port 8000   # SQLite (backend/local.db) by default
+.venv/Scripts/uvicorn app.main:app --reload --port 8000   # macOS/Linux: .venv/bin/uvicorn ...
 
 # frontend: Node 22
 cd frontend
@@ -94,13 +107,13 @@ cd backend && .venv/Scripts/python -m app.cli "Analyse employment trends in the 
 ```
 
 The `Makefile` wraps these (`make up`, `make dev-api`, `make dev-web`, `make cli Q="..."`, `make test`,
-`make lint`, `make load-stack && make load`, `make aws-*`). It uses Windows venv paths; on macOS/Linux,
-run the underlying commands with `.venv/bin/`.
+`make lint`, `make load-stack && make load`, `make aws-*`). It detects the venv layout
+(`Scripts/` on Windows, `bin/` on macOS/Linux), so the same `make` targets work on every platform.
 
 ## Running the tests
 
 ```bash
-cd backend
+cd backend                                  # macOS/Linux: use .venv/bin/ instead of .venv/Scripts/
 .venv/Scripts/pytest -m "not contract and not llm" --cov=app      # 141 tests, ~40 s, offline, no keys
 .venv/Scripts/pytest tests/eval -s                                 # prints the hallucination-detection table
 .venv/Scripts/ruff check app tests

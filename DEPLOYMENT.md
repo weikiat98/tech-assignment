@@ -53,10 +53,23 @@ Internet ──HTTPS──▶ CloudFront (*.cloudfront.net certificate, no domai
 
 ## 3. AWS step by step
 
-Run these from **Git Bash** (the scripts are bash) in the repo root. Steps marked 💰 create billable
+Run these from **Git Bash** on Windows, or **Terminal** (zsh or bash) on macOS, in the repo root (the
+scripts are bash). Steps marked 💰 create billable
 resources.
 
 ### Step 0: prerequisites (once)
+
+On macOS, install the tools with [Homebrew](https://brew.sh) (Docker Desktop must be running before
+step 5):
+
+```bash
+brew install awscli terraform jq make
+brew install --cask docker
+```
+
+(If `brew install terraform` is refused, use HashiCorp's tap: `brew tap hashicorp/tap && brew install
+hashicorp/tap/terraform`.) Apple Silicon Macs are fine: `deploy.sh` builds `linux/amd64` images, which is what
+Fargate runs here.
 
 ```bash
 aws --version                  # AWS CLI v2
@@ -124,11 +137,28 @@ If your account already has a GitHub OIDC provider (from another project), the a
 
 ### Step 4: put the real secrets into Secrets Manager
 
-Terraform creates the secret with placeholders only, so keys never enter Terraform state. Write the real
-values from a temporary file, then delete it:
+Terraform creates the secret with placeholders only, so keys never enter Terraform state.
+
+**Easiest on macOS/Linux:** run the bash helper (needs `aws`, `jq`, `openssl`). It does the same as the
+PowerShell one below:
 
 ```bash
-cat > secrets.json <<'EOF'
+export AWS_PROFILE=<your-sso-profile>
+bash infra/scripts/set-secrets.sh
+```
+
+**Easiest on Windows (PowerShell):** run the helper. It asks for each key with hidden typing (Enter skips),
+creates the access token, uploads, deletes the temporary file, and prints the token:
+
+```powershell
+$env:AWS_PROFILE = "<your-sso-profile>"
+powershell -ExecutionPolicy Bypass -File infra\scripts\set-secrets.ps1
+```
+
+**Manual (bash, macOS/Linux/Git Bash):** write the real values to a temporary file, upload, then delete it:
+
+```bash
+cat > secrets.json <<'EOF'   # on macOS, generate the token with: openssl rand -hex 24
 {
   "OPENAI_API_KEY": "sk-...",
   "GOOGLE_API_KEY": "...",
@@ -198,6 +228,19 @@ AWS keys are stored in GitHub. In the repository settings:
 
 4. Run it: **Actions → Deploy to AWS ECS → Run workflow**, or push a tag (`git tag v1.0.0 && git push
    origin v1.0.0`).
+
+**`Not authorized to perform sts:AssumeRoleWithWebIdentity`:** the token's subject doesn't match the
+role's trust policy. Find what GitHub actually sent in CloudTrail:
+
+```bash
+aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,AttributeValue=AssumeRoleWithWebIdentity \
+  --max-results 3 --query "Events[].CloudTrailEvent" --output text | grep -o '"userName":"[^"]*"'
+```
+
+If it looks like `repo:<owner>@<number>/<repo>@<number>:environment:aws`, your repo uses GitHub's
+immutable-ID subject format. Put the two numbers in `terraform.tfvars` as `github_owner_id` and
+`github_repo_id`, then run `make aws-plan` and `make aws-apply` (one in-place change to the role). If the
+environment part differs (e.g. `environment:AWS`), rename the GitHub environment to exactly `aws`.
 
 **Rollback:** ECS's deployment circuit breaker rolls back a deployment whose tasks fail health checks.
 To return to an earlier version, re-run the workflow on that commit, or point the service at an older

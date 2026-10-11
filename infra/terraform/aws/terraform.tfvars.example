@@ -1,4 +1,8 @@
 github_repo        = "REPLACE_ME/REPLACE_ME"
+# Only if GitHub's OIDC subject for your repo uses immutable ids ("repo:owner@123/name@456:...");
+# the ids appear in the AccessDenied CloudTrail event or via `gh api repos/<owner>/<repo> --jq .owner.id,.id`
+github_owner_id    = ""
+github_repo_id     = ""
 alert_email        = "REPLACE_ME@example.com"
 monthly_budget_usd = 30
 # Langfuse region of your project (US: https://us.cloud.langfuse.com, EU: https://cloud.langfuse.com)

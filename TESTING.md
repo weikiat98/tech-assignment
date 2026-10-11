@@ -29,6 +29,9 @@ The design makes most of the system deterministic, so most of it can be tested e
 
 ## 2. How to run
 
+On macOS/Linux, replace `.venv/Scripts/` with `.venv/bin/` (or just use the `make` targets, which pick the
+right one).
+
 ```bash
 cd backend
 .venv/Scripts/pytest -m "not contract and not llm" --cov=app --cov-report=term --cov-report=html

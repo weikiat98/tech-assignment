@@ -52,17 +52,19 @@ Gemini** (decision 14).
 | A5 | **Repo visibility** 👤 | Public, or invite the assessors. |
 | A6 | Demo rehearsal + backup recording (C8) 👤 | plan.md §15. Keep `OFFLINE_MODE=true` + `LLM_MODE=mock` as the fallback. |
 
-## 🟠 AWS deployment (after A1), steps in DEPLOYMENT.md §3
+## 🟠 AWS deployment (DEPLOYMENT.md §3)
+
+**Destroyed on 9 Oct to stop costs** (all 42 resources; no leftovers, no DB snapshots). It was proven
+working end to end on 8 Oct: Terraform apply, secrets, `make aws-deploy`, live at a CloudFront URL with
+`/readyz` OK and the token enforced. Local `terraform.tfvars` (incl. the GitHub owner/repo ids) is kept,
+so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-secrets.ps1` →
+`make aws-deploy` (about 30 min, US$3-4/day while up).
 
 | # | Item | Owner |
 |---|---|---|
-| D1 | Fill `infra/terraform/aws/terraform.tfvars` (repo, email, budget, `langfuse_host`) | 👤 |
-| D2 | `make aws-plan`; review the output | 👥 (I can run it once A1 works) |
-| D3 | `make aws-apply` (billable, about US$3-4/day) | 👤 approve |
-| D4 | Put real secrets into Secrets Manager, incl. a real `APP_ACCESS_TOKEN` | 👤 |
-| D5 | `make aws-deploy`, then check token screen, WebSocket, PDF, `/readyz` via CloudFront | 👥 |
-| D6 | GitHub: environment `aws` (main + `v*` only), secret `AWS_DEPLOY_ROLE_ARN`, 8 variables; run the workflow once | 👤 |
-| D7 | `make aws-pause` until the demo; `make aws-destroy` after evaluation | 👤 |
+| D5 | Browser check on AWS not done before destroy: token screen, live timeline (WebSocket via CloudFront), PDF export, a real OpenAI run | 👥 next time it's up |
+| D8 | GitHub deploy workflow: OIDC login fixed (immutable-ID subject); last run failed on empty repo variables. After redeploying, update `APP_URL` (new CloudFront URL), check all 8 are under **Variables** (not Secrets) with exact names, then run the workflow | 👤 |
+| D9 | Commit local changes: OIDC fix (`iam.tf`, `variables.tf`, `terraform.tfvars.example`), `deploy.sh` missing-settings message, `set-secrets.ps1`, docs | 👤 |
 
 ## 🟡 With keys / nice to have
 

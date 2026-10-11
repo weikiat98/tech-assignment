@@ -8,6 +8,18 @@ REGION="${AWS_REGION:-ap-southeast-1}"
 TF_DIR="$(dirname "$0")/../terraform/aws"
 tf() { terraform -chdir="$TF_DIR" output -raw "$1"; }
 
+# Without Terraform (e.g. in GitHub Actions) every setting must come from the environment: name the gaps.
+if ! command -v terraform >/dev/null 2>&1; then
+  missing=""
+  for v in ECR_BACKEND ECR_FRONTEND CLUSTER API_SERVICE WEB_SERVICE SUBNETS TASKS_SG APP_URL; do
+    [ -n "${!v:-}" ] || missing="$missing $v"
+  done
+  if [ -n "$missing" ]; then
+    echo "::error::Empty settings:$missing. In GitHub: Settings > Secrets and variables > Actions > Variables tab (not Secrets); names must match exactly."
+    exit 1
+  fi
+fi
+
 ECR_BACKEND="${ECR_BACKEND:-$(tf ecr_backend)}"
 ECR_FRONTEND="${ECR_FRONTEND:-$(tf ecr_frontend)}"
 CLUSTER="${CLUSTER:-$(tf cluster)}"
@@ -22,8 +34,9 @@ echo "==> Logging in to ECR"
 aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "${ECR_BACKEND%%/*}"
 
 echo "==> Building and pushing images ($TAG)"
-docker build -t "$ECR_BACKEND:$TAG" backend
-docker build -t "$ECR_FRONTEND:$TAG" frontend
+# Fargate runs x86_64; --platform keeps Apple Silicon Macs from building arm64 images.
+docker build --platform linux/amd64 -t "$ECR_BACKEND:$TAG" backend
+docker build --platform linux/amd64 -t "$ECR_FRONTEND:$TAG" frontend
 docker push "$ECR_BACKEND:$TAG"
 docker push "$ECR_FRONTEND:$TAG"
 
