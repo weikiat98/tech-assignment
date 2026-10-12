@@ -46,9 +46,9 @@ Gemini** (decision 14).
 | # | Item | Details |
 |---|---|---|
 | A1 | ~~Fix AWS credentials~~ ✅ | Works with the SSO profile `meow98` (AdministratorAccess, `ap-southeast-1`): run `export AWS_PROFILE=meow98` before any `make aws-*`. The **default** profile holds a stale, invalid access key; delete it from `~/.aws/credentials` (or leave it unused) so nothing picks it up by accident. |
-| A2 | **Google Gemini key** 👤 | `GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called. With it I can test Gemini directly and the OpenAI → Gemini fallback. |
+| A2 |~~Google Gemini key~~ 👤 | `GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called. With it I can test Gemini directly and the OpenAI → Gemini fallback. |
 | A3 | **Review and edit docs** 👤 | Especially INNOVATION.md (written in your voice as a draft; remove the comment on line 1). |
-| A4 | **Commit and push** 👥 | Nothing from 7 Oct is committed yet. Say the word and I'll commit in logical chunks and push to `origin/main`. CI then runs on GitHub for the first time. |
+| A4 | ~~Commit and push~~ 👥 | Nothing from 7 Oct is committed yet. Say the word and I'll commit in logical chunks and push to `origin/main`. CI then runs on GitHub for the first time. |
 | A5 | **Repo visibility** 👤 | Public, or invite the assessors. |
 | A6 | Demo rehearsal + backup recording (C8) 👤 | plan.md §15. Keep `OFFLINE_MODE=true` + `LLM_MODE=mock` as the fallback. |
 
@@ -70,13 +70,71 @@ so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-s
 
 | # | Item | Owner |
 |---|---|---|
-| K1 | Live-LLM run of every sample query (OpenAI, then Gemini): agent quality (H9), out-of-scope handling (M10), verification rates | 🤖 (costs a few US cents per run) |
-| K2 | Langfuse: traces appear, LLM calls nest under the run, scores attach, masking works, "Open trace" link | 🤖 after keys |
+| K1 | ~~Live-LLM run of every sample query (OpenAI, then Gemini): agent quality (H9), out-of-scope handling (M10), verification rates~~ | 🤖 (costs a few US cents per run) |
+| K2 | ~~Langfuse: traces appear, LLM calls nest under the run, scores attach, masking works, "Open trace" link~~ | 🤖 after keys |
 | K3 | Tavily / DuckDuckGo live search (only mock search has run) | 🤖 |
-| K4 | Confirm model ids and prices in `llm/costs.py` (M3) | 👤 |
-| M1 | MOM workbook is a disclosed sample built from MOM-sourced figures; optionally point `MOM_EXCEL_URL` at a real MOM download | 👤 decide |
+| K4 | ~~Confirm model ids and prices in `llm/costs.py` (M3)~~ | 👤 |
+| M1 | ~~MOM workbook is a disclosed sample built from MOM-sourced figures; optionally point `MOM_EXCEL_URL` at a real MOM download~~ | 👤 decide |
 | M7 | One DB session per event: fine at 50 users; batch if needed | 🤖 |
 | M12 | Mobile layout, long-claim wrapping, empty states | 🤖 |
+
+## 🎨 Frontend UI enhancement with Radix Primitives (planned 12 Oct, approved 13 Oct, not started: wait for go)
+
+Reference: [radix-ui/primitives](https://github.com/radix-ui/primitives). These are unstyled, accessible
+React primitives. Install the single **`radix-ui@^1.8.0`** package and import each primitive by subpath
+(`import * as Tabs from "radix-ui/tabs"`) so unused ones are tree-shaken. Versions below 1.6.4 broke the
+root-entry types. Peer deps list React `^16.8 … ^19`, so our React 18.3 works and no upgrade is needed.
+Radix brings behaviour only (keyboard, focus, ARIA); it doesn't style anything. The look stays our
+Tailwind 4 classes, applied through Radix's data attributes, e.g. `data-[state=open]:`,
+`data-highlighted:` and `w-(--radix-select-trigger-width)`. This replaces the hand-rolled widgets that
+have accessibility gaps:
+
+- the tab bar is a set of plain buttons (no `tablist` role, no arrow-key navigation);
+- the fact tooltip only appears on CSS hover, so keyboard users can't open it, and scrolling containers
+  clip it;
+- each demo toggle is a `<button>` inside a `<label>`;
+- timeline rows are expanded by clicking an `<li>`;
+- Delete in History has no confirmation;
+- Cancel, Re-run and Delete fail silently.
+
+**Phase 1: foundation and the biggest accessibility wins (all 🤖)**
+
+| # | Item | Radix primitive | Where |
+|---|---|---|---|
+| U0 | Install `radix-ui`. Create a styled wrapper layer in `src/components/ui/`, one file per primitive, plus a `Button` that supports `asChild` through `Slot` so links and buttons share styles. Mount `Tooltip.Provider` and `Toast.Provider` in `main.tsx`. Add design tokens (surface, border, muted, agent colours) to `@theme`, a shared `focus-visible` ring, and enter/exit keyframes in `index.css`. Exit animations must be CSS **keyframe** animations: Radix `Presence` waits for `animationend` before unmounting, and transitions don't trigger it. | Slot, Portal | `components/ui.tsx` → `components/ui/*`, `main.tsx`, `index.css` |
+| U1 | Controlled `Tabs.Root value={tab}` for the results tabs. The current auto-switch to Charts and back keeps working. Gains: arrow-key navigation, `tablist`/`tab`/`tabpanel` roles, `data-state=active` styling. | Tabs | `pages/RunView.tsx` |
+| U2 | Replace `FactChip`'s CSS-hover popup with a Tooltip. The trigger becomes focusable, the content is portalled (so it is no longer clipped), and it repositions on collision. | Tooltip | `ResultPanels.tsx` |
+| U3 | Use Switch + Label for the demo chaos toggles, "Include web context" and "show facts". This fixes the button-in-label markup and the invalid `left-4.5` knob class. | Switch, Label | `DemoControls.tsx`, `NewAnalysis.tsx`, `AgentTimeline.tsx` |
+| U4 | Confirm before deleting a History item. Focus starts on Cancel, and Esc or an outside click can't confirm by accident. | AlertDialog | `pages/History.tsx` |
+
+**Phase 2: run-view polish (all 🤖)**
+
+| # | Item | Radix primitive | Where |
+|---|---|---|---|
+| U5 | Replace the four PDF/MD/JSON/CSV links with one "Export ▾" menu (keyboard and typeahead). History row actions (Re-run, Delete) move into a "⋯" menu. | DropdownMenu | `RunView.tsx`, `History.tsx` |
+| U6 | Toasts for mutation errors (cancel, re-run, delete, clarify), "export started", and notable run events (LLM/source fallback, verification rewrite, run finished). They are announced through `aria-live`, and F8 focuses the toast region. | Toast | new `ui/toast.tsx` + hook |
+| U7 | Make timeline events expandable: a keyboard-operable trigger, `aria-expanded`, and a height animation via `--radix-collapsible-content-height`. Data & quality: each dataset card's checks and cleaning-action lists collapse, with the score always visible. | Collapsible / Accordion | `AgentTimeline.tsx`, `ResultPanels.tsx` (DataPanel) |
+| U8 | Add a stage progress bar to the run header: interpret → plan → extract → quality → analyse → write → verify, derived from events and indeterminate while queued. Rebuild `ScoreBar` on Progress to get `role="progressbar"` and its aria values. | Progress | `RunView.tsx`, `ui` |
+
+**Phase 3: navigation, filtering, mobile (🤖, covers M12)**
+
+| # | Item | Radix primitive | Where |
+|---|---|---|---|
+| U9 | Timeline filters by agent (coordinator, extraction, analytics, writer, verifier) and by event kind (reasoning, data, alerts), replacing the single "show facts" checkbox. Add a status filter to History, as plan.md §7 calls for. | ToggleGroup | `AgentTimeline.tsx`, `History.tsx` |
+| U10 | Give the timeline pane and the event JSON viewer custom scrollbars while keeping native scrolling. Use the 1.7+ `ScrollArea.Content` pattern: `Viewport`'s implicit wrapper is deprecated. | ScrollArea | `RunView.tsx`, `AgentTimeline.tsx` |
+| U11 | An "Expand" button on each chart opens it full-size in a modal Dialog, which needs a `Dialog.Title` (VisuallyHidden if needed). | Dialog, VisuallyHidden | `ChartsPanel` |
+| U12 | Mobile (below `lg`): Activity and Results become two top-level tabs instead of the fixed 420 px column, as plan.md §7 describes. Long claims wrap, and every panel has a proper empty state. | Tabs | `RunView.tsx` |
+| U13 | Clarification stays inline and non-modal, so the timeline stays visible. When the run enters `awaiting_input`, focus moves to the card and the question is announced via `aria-live`. Icon-only buttons get VisuallyHidden labels. | VisuallyHidden | `ClarificationCard.tsx` |
+| U14 | Vitest + Testing Library tests: Tabs keyboard navigation, the AlertDialog confirm flow, Switch toggling, and the export menu. jsdom needs `ResizeObserver`, `hasPointerCapture` and `scrollIntoView` stubs for Radix. Overlaps L1. | | `frontend/src/**/*.test.tsx` |
+
+**Checks and decisions**
+
+| # | Item | Owner |
+|---|---|---|
+| U15 | ~~Approve adopting Radix~~ ✅ 13 Oct: recorded as decision 22 in plan.md §18, §3 and §7 updated. | 👥 |
+| U16 | Measure the bundle after each phase against the decision-20 baseline (app shell 397 kB). Only subpath imports of the primitives we use should be pulled in. | 🤖 |
+| U17 | ~~Refresh the look or only swap behaviour?~~ ✅ 13 Oct: **refresh the look too.** Before Phase 1, propose a concrete visual direction (type scale, palette incl. agent and status colours, density, light/dark) as U0 tokens, for your sign-off. | 👥 |
+| U18 | After each phase: `npm run lint`, `typecheck`, `build`, `test`, plus a browser walk-through of the demo script (plan.md §15) with keyboard only. | 🤖 |
 
 ## 🟢 Stretch
 
