@@ -17,5 +17,5 @@ export default defineConfig({
       "/ws": { target: api.replace(/^http/, "ws"), ws: true },
     },
   },
-  test: { environment: "jsdom" },
+  test: { environment: "jsdom", setupFiles: ["./src/test/setup.ts"] },
 });

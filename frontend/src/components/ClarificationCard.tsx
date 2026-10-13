@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import { useToast } from "./ui";
 
+/** Inline, non-modal: the timeline stays visible. Focus moves here when the run asks for input. */
 export default function ClarificationCard({
   runId,
   question,
@@ -14,17 +16,36 @@ export default function ClarificationCard({
   onAnswered: () => void;
 }) {
   const [answer, setAnswer] = useState("");
-  const send = useMutation({ mutationFn: (a: string) => api.clarify(runId, a), onSuccess: onAnswered });
+  const toast = useToast();
+  const card = useRef<HTMLDivElement>(null);
+  const send = useMutation({
+    mutationFn: (a: string) => api.clarify(runId, a),
+    onSuccess: onAnswered,
+    onError: (e) => toast({ title: "Could not send your answer", description: (e as Error).message, tone: "error" }),
+  });
+
+  useEffect(() => {
+    card.current?.focus();
+  }, []);
+
   return (
-    <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+    <div
+      ref={card}
+      tabIndex={-1}
+      role="alert"
+      aria-live="assertive"
+      className="rounded-xl border border-amber-300 bg-amber-50 p-4"
+    >
       <p className="text-sm font-semibold text-amber-900">The coordinator needs a clarification</p>
       <p className="mt-1 text-sm text-amber-900">{question}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {suggestions.map((s) => (
           <button
             key={s}
+            type="button"
             onClick={() => send.mutate(s)}
-            className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs text-amber-900 hover:bg-amber-100"
+            disabled={send.isPending}
+            className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs text-amber-900 hover:bg-amber-100 disabled:opacity-50"
           >
             {s}
           </button>
@@ -38,16 +59,16 @@ export default function ClarificationCard({
         }}
       >
         <input
+          aria-label="Your answer"
           className="flex-1 rounded-md border border-amber-300 px-3 py-1.5 text-sm"
           placeholder="Or type your own answer"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
         />
-        <button className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white" disabled={send.isPending}>
+        <button className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50" disabled={send.isPending}>
           Continue
         </button>
       </form>
-      {send.error && <p className="mt-2 text-xs text-red-700">{(send.error as Error).message}</p>}
     </div>
   );
 }

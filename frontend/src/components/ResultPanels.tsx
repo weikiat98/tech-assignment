@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AgentEvent, AnalysisResult, Chart, Claim, DatasetSummary, Fact } from "../lib/types";
@@ -9,7 +9,7 @@ type PlanTask = NonNullable<AnalysisResult["plan"]>["tasks"][number];
 
 // Plotly is ~1 MB: load it only when a chart is first shown, not with the app shell.
 const PlotlyChart = lazy(() => import("./PlotlyChart"));
-import { ScoreBar, TierBadge } from "./ui";
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Modal, ScoreBar, TierBadge, Tooltip } from "./ui";
 
 /* ---------- Report ---------- */
 
@@ -48,17 +48,28 @@ export function ReportPanel({ result, events }: { result: AnalysisResult | null;
 function FactChip({ fact }: { fact: Fact | undefined; id: string }) {
   if (!fact) return null;
   return (
-    <span className="group relative ml-1 inline-block cursor-help rounded bg-brand-50 px-1 text-[11px] font-medium text-brand-700 ring-1 ring-brand-100">
-      {fact.id}
-      <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1 hidden w-72 rounded-lg bg-slate-900 p-2 text-[11px] font-normal text-white shadow-lg group-hover:block">
-        <b>{fact.label}</b>
-        <br />
-        {fact.display} · method: {fact.method}
-        <br />
-        source: {fact.source_keys.join(", ")}
-        {fact.derived && <><br /><i>derived by this platform</i></>}
-      </span>
-    </span>
+    <Tooltip
+      trigger={
+        <button
+          type="button"
+          className="ml-1 inline-block cursor-help rounded bg-brand-50 px-1 text-[11px] font-medium text-brand-700 ring-1 ring-brand-100"
+        >
+          {fact.id}
+        </button>
+      }
+    >
+      <b>{fact.label}</b>
+      <br />
+      {fact.display} · method: {fact.method}
+      <br />
+      source: {fact.source_keys.join(", ")}
+      {fact.derived && (
+        <>
+          <br />
+          <i>derived by this platform</i>
+        </>
+      )}
+    </Tooltip>
   );
 }
 
@@ -142,19 +153,34 @@ export function InsightsPanel({ result }: { result: AnalysisResult | null }) {
 /* ---------- Charts ---------- */
 
 export function ChartsPanel({ result, events }: { result: AnalysisResult | null; events: AgentEvent[] }) {
+  const [expanded, setExpanded] = useState<Chart | null>(null);
   const charts = result?.charts ?? events.filter((e) => e.type === "chart").map((e) => e.content as Chart);
   if (!charts.length) return <Empty text="Charts appear as the analytics agent creates them." />;
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
-      {charts.map((c) => (
-        <div key={c.id} className="rounded-lg border border-slate-100 p-2">
-          <Suspense fallback={<div className="h-[340px] animate-pulse rounded bg-slate-50" />}>
-            <PlotlyChart chart={c} />
+    <>
+      <div className="grid gap-4 xl:grid-cols-2">
+        {charts.map((c) => (
+          <div key={c.id} className="rounded-lg border border-line p-2">
+            <Suspense fallback={<div className="h-[340px] animate-pulse rounded bg-slate-50" />}>
+              <PlotlyChart chart={c} />
+            </Suspense>
+            <div className="flex items-center justify-between gap-2 px-2 pb-1">
+              <p className="text-[11px] text-muted">Source: {c.source_keys.join(", ")}</p>
+              <Button size="sm" variant="ghost" onClick={() => setExpanded(c)} aria-label={`Expand chart: ${c.title}`}>
+                Expand
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Modal open={expanded !== null} onOpenChange={(o) => !o && setExpanded(null)} title={expanded?.title ?? "Chart"}>
+        {expanded && (
+          <Suspense fallback={<div className="h-[520px] animate-pulse rounded bg-slate-50" />}>
+            <PlotlyChart chart={expanded} height={520} />
           </Suspense>
-          <p className="px-2 pb-1 text-[11px] text-slate-500">Source: {c.source_keys.join(", ")}</p>
-        </div>
-      ))}
-    </div>
+        )}
+      </Modal>
+    </>
   );
 }
 
@@ -191,28 +217,36 @@ export function DataPanel({ result, events }: { result: AnalysisResult | null; e
           )}
           {d.fallback_reason && <p className="mt-1 text-xs text-amber-700">{d.fallback_reason}</p>}
           {d.quality && (
-            <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
-              <div>
-                <p className="font-medium text-slate-700">Checks</p>
-                <ul className="mt-1 space-y-0.5">
-                  {d.quality.issues.length === 0 && <li className="text-emerald-700">No issues found</li>}
-                  {d.quality.issues.map((i, idx) => (
-                    <li key={idx} className={i.severity === "error" ? "text-red-700" : i.severity === "warning" ? "text-amber-700" : "text-slate-500"}>
-                      [{i.check}] {i.message.slice(0, 220)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="font-medium text-slate-700">Cleaning actions</p>
-                <ul className="mt-1 space-y-0.5 text-slate-600">
-                  {d.quality.actions.length === 0 && <li>None needed</li>}
-                  {d.quality.actions.map((a: string, idx: number) => (
-                    <li key={idx}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <Collapsible defaultOpen={d.quality.issues.length > 0} className="mt-2">
+              <CollapsibleTrigger className="text-xs font-medium text-brand-700 hover:underline">
+                Checks &amp; cleaning actions ({d.quality.issues.length} issue{d.quality.issues.length === 1 ? "" : "s"},{" "}
+                {d.quality.actions.length} action{d.quality.actions.length === 1 ? "" : "s"})
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="mt-2 grid gap-2 text-xs md:grid-cols-2">
+                  <div>
+                    <p className="font-medium text-slate-700">Checks</p>
+                    <ul className="mt-1 space-y-0.5">
+                      {d.quality.issues.length === 0 && <li className="text-emerald-700">No issues found</li>}
+                      {d.quality.issues.map((i, idx) => (
+                        <li key={idx} className={i.severity === "error" ? "text-red-700" : i.severity === "warning" ? "text-amber-700" : "text-slate-500"}>
+                          [{i.check}] {i.message.slice(0, 220)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-700">Cleaning actions</p>
+                    <ul className="mt-1 space-y-0.5 text-slate-600">
+                      {d.quality.actions.length === 0 && <li>None needed</li>}
+                      {d.quality.actions.map((a: string, idx: number) => (
+                        <li key={idx}>{a}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       ))}

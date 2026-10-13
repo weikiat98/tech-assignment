@@ -3,20 +3,46 @@ import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useRunEvents } from "../lib/useRunEvents";
+import { STAGES, currentStage, stageProgress } from "../lib/stages";
 import AgentTimeline from "../components/AgentTimeline";
 import ClarificationCard from "../components/ClarificationCard";
 import { ChartsPanel, DataPanel, InsightsPanel, PlanPanel, ReportPanel } from "../components/ResultPanels";
-import { StatusBadge } from "../components/ui";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  StageProgress,
+  StatusBadge,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  cn,
+  useToast,
+} from "../components/ui";
 
 const TABS = ["Insights", "Charts", "Data & quality", "Report", "Plan"] as const;
 type Tab = (typeof TABS)[number];
 const ACTIVE = new Set(["queued", "running", "awaiting_input"]);
+const EXPORTS = [
+  { format: "pdf", label: "PDF report" },
+  { format: "md", label: "Markdown" },
+  { format: "json", label: "JSON (facts + report)" },
+  { format: "csv", label: "CSV (datasets, zip)" },
+] as const;
 
 export default function RunView() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<Tab>("Insights");
+  // Below `lg` the activity timeline and the results are two top-level panes instead of side by side.
+  const [pane, setPane] = useState<"results" | "activity">("results");
   const autoSwitched = useRef(false);
+  const mountedAt = useRef(Date.now());
+  const toasted = useRef(0);
   const { data: analysis } = useQuery({
     queryKey: ["analysis", id],
     queryFn: () => api.getAnalysis(id!),
@@ -48,17 +74,52 @@ export default function RunView() {
     }
   }, [analysis?.result]);
 
-  const cancel = useMutation({ mutationFn: () => api.cancel(id!) });
+  // Toasts for notable live events. Events older than this page load are a replay of history: skip them.
+  useEffect(() => {
+    for (const e of events) {
+      if (e.seq <= toasted.current) continue;
+      toasted.current = e.seq;
+      if (Date.parse(e.ts) < mountedAt.current - 5000) continue;
+      const c = e.content;
+      if (e.type === "fallback") {
+        toast({
+          title: c.kind === "llm" ? `LLM fallback: ${c.from} → ${c.to}` : "Source fallback",
+          description: c.kind === "llm" ? c.task : String(c.dataset ?? c.source ?? c.kind ?? ""),
+          tone: "warning",
+        });
+      } else if (e.type === "verification" && c.passed === false) {
+        toast({ title: "Draft failed verification", description: `Rewriting (attempt ${c.attempt})`, tone: "warning" });
+      } else if (e.type === "error") {
+        toast({ title: "Run error", description: String(c.message ?? ""), tone: "error" });
+      } else if (e.type === "final") {
+        toast({ title: `Analysis ${c.status}`, tone: c.status === "completed" ? "success" : "warning" });
+      }
+    }
+  }, [events, toast]);
+
+  const cancel = useMutation({
+    mutationFn: () => api.cancel(id!),
+    onSuccess: () => toast({ title: "Cancelling the run…" }),
+    onError: (e) => toast({ title: "Could not cancel the run", description: (e as Error).message, tone: "error" }),
+  });
   const clarification = [...events].reverse().find((e) => e.type === "clarification")?.content;
   const result = analysis?.result ?? null;
   const cost = result?.total_cost_usd ?? events.reduce((s, e) => s + (e.cost_usd || 0), 0);
+  const stageIdx = currentStage(events);
+  const finished = Boolean(analysis && !ACTIVE.has(analysis.status));
+  const progress = stageProgress(events, finished);
+  const stageLabel = finished
+    ? "Run finished"
+    : stageIdx < 0
+      ? analysis?.status === "queued" || !analysis ? "Queued" : "Starting"
+      : `Stage ${stageIdx + 1} of ${STAGES.length}: ${STAGES[stageIdx]}`;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-wide text-slate-500">Research question</p>
-          <h1 className="text-lg font-semibold">{analysis?.query ?? "…"}</h1>
+          <h1 className="break-words text-lg font-semibold">{analysis?.query ?? "…"}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
             {analysis && <StatusBadge status={analysis.status} />}
             <span>LLM: {result?.llm_providers_used.join(", ") || "…"}</span>
@@ -72,21 +133,35 @@ export default function RunView() {
         </div>
         <div className="flex flex-wrap gap-2">
           {active && analysis?.status === "running" && (
-            <button onClick={() => cancel.mutate()} className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs">
+            <Button size="sm" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
               Cancel
-            </button>
+            </Button>
           )}
-          {result &&
-            (["pdf", "md", "json", "csv"] as const).map((f) => (
-              <a
-                key={f}
-                href={api.exportUrl(id!, f)}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium uppercase hover:border-brand-500"
-              >
-                {f}
-              </a>
-            ))}
+          {result && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm">
+                  Export <span aria-hidden>▾</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {EXPORTS.map((x) => (
+                  <DropdownMenuItem key={x.format} asChild onSelect={() => toast({ title: `Export started: ${x.label}` })}>
+                    <a href={api.exportUrl(id!, x.format)}>{x.label}</a>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
+      </div>
+
+      <div>
+        <div className="mb-1 flex items-center justify-between text-xs text-slate-500" aria-live="polite">
+          <span>{stageLabel}</span>
+          {!finished && <span>{progress === null ? "" : `${progress}%`}</span>}
+        </div>
+        <StageProgress value={progress} label="Analysis progress" />
       </div>
 
       {analysis?.status === "awaiting_input" && clarification && (
@@ -98,35 +173,61 @@ export default function RunView() {
         />
       )}
       {analysis?.status === "failed" && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">Run failed: {analysis.error}</div>
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          Run failed: {analysis.error}
+        </div>
       )}
 
+      <Tabs value={pane} onValueChange={(v) => setPane(v as typeof pane)} className="lg:hidden">
+        <TabsList aria-label="Switch between results and agent activity" className="rounded-xl border border-line bg-surface px-2 pb-0">
+          <TabsTrigger value="results">Results</TabsTrigger>
+          <TabsTrigger value="activity">Agent activity ({events.length})</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
-        <section className="flex h-[calc(100vh-220px)] min-h-[420px] flex-col rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <section
+          aria-label="Agent activity"
+          className={cn(
+            "h-[calc(100vh-260px)] min-h-[420px] flex-col rounded-xl border border-line bg-surface-sunken p-3 lg:flex",
+            pane === "activity" ? "flex" : "hidden",
+          )}
+        >
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Agent activity</h2>
-          <AgentTimeline events={events} connected={connected} />
+          <div className="min-h-0 flex-1">
+            <AgentTimeline events={events} connected={connected} />
+          </div>
         </section>
-        <section className="min-w-0 rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex gap-1 overflow-x-auto border-b border-slate-100 px-3 pt-2">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm ${
-                  tab === t ? "border-brand-600 font-medium text-brand-700" : "border-transparent text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-          <div className="p-4">
-            {tab === "Insights" && <InsightsPanel result={result} />}
-            {tab === "Charts" && <ChartsPanel result={result} events={events} />}
-            {tab === "Data & quality" && <DataPanel result={result} events={events} />}
-            {tab === "Report" && <ReportPanel result={result} events={events} />}
-            {tab === "Plan" && <PlanPanel events={events} />}
-          </div>
+        <section
+          aria-label="Results"
+          className={cn("min-w-0 rounded-xl border border-line bg-surface shadow-sm lg:block", pane === "results" ? "block" : "hidden")}
+        >
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
+            <TabsList aria-label="Analysis results">
+              {TABS.map((t) => (
+                <TabsTrigger key={t} value={t}>
+                  {t}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            <div className="p-4">
+              <TabsContent value="Insights">
+                <InsightsPanel result={result} />
+              </TabsContent>
+              <TabsContent value="Charts">
+                <ChartsPanel result={result} events={events} />
+              </TabsContent>
+              <TabsContent value="Data & quality">
+                <DataPanel result={result} events={events} />
+              </TabsContent>
+              <TabsContent value="Report">
+                <ReportPanel result={result} events={events} />
+              </TabsContent>
+              <TabsContent value="Plan">
+                <PlanPanel events={events} />
+              </TabsContent>
+            </div>
+          </Tabs>
         </section>
       </div>
     </div>

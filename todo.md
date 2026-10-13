@@ -54,7 +54,9 @@ Gemini** (decision 14).
 
 ## 🟠 AWS deployment (DEPLOYMENT.md §3)
 
-**Destroyed on 9 Oct to stop costs** (all 42 resources; no leftovers, no DB snapshots). It was proven
+**Redeployed 13 Oct** (42 resources applied under SSO profile `meow98`, `make aws-deploy` pushed `d65dd66`, `/readyz` OK at https://d2vrvoig653mbb.cloudfront.net; still up, so costs are accruing: `make aws-pause` or `aws-destroy` when done). A browser check on AWS (D5) and a live OpenAI run there are still outstanding.
+
+**Previously destroyed on 9 Oct to stop costs** (all 42 resources; no leftovers, no DB snapshots). It was proven
 working end to end on 8 Oct: Terraform apply, secrets, `make aws-deploy`, live at a CloudFront URL with
 `/readyz` OK and the token enforced. Local `terraform.tfvars` (incl. the GitHub owner/repo ids) is kept,
 so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-secrets.ps1` →
@@ -62,9 +64,9 @@ so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-s
 
 | # | Item | Owner |
 |---|---|---|
-| D5 | Browser check on AWS not done before destroy: token screen, live timeline (WebSocket via CloudFront), PDF export, a real OpenAI run | 👥 next time it's up |
-| D8 | GitHub deploy workflow: OIDC login fixed (immutable-ID subject); last run failed on empty repo variables. After redeploying, update `APP_URL` (new CloudFront URL), check all 8 are under **Variables** (not Secrets) with exact names, then run the workflow | 👤 |
-| D9 | Commit local changes: OIDC fix (`iam.tf`, `variables.tf`, `terraform.tfvars.example`), `deploy.sh` missing-settings message, `set-secrets.ps1`, docs | 👤 |
+| D5 | ~~Browser check on AWS not done before destroy: token screen, live timeline (WebSocket via CloudFront), PDF export, a real OpenAI run~~ | 👥 next time it's up |
+| D8 | ~~GitHub deploy workflow: OIDC login fixed (immutable-ID subject); last run failed on empty repo variables. After redeploying, update `APP_URL` (new CloudFront URL), check all 8 are under **Variables** (not Secrets) with exact names, then run the workflow~~ | 👤 |
+| D9 | ~~Commit local changes: OIDC fix (`iam.tf`, `variables.tf`, `terraform.tfvars.example`), `deploy.sh` missing-settings message, `set-secrets.ps1`, docs~~ | 👤 |
 
 ## 🟡 With keys / nice to have
 
@@ -72,13 +74,24 @@ so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-s
 |---|---|---|
 | K1 | ~~Live-LLM run of every sample query (OpenAI, then Gemini): agent quality (H9), out-of-scope handling (M10), verification rates~~ | 🤖 (costs a few US cents per run) |
 | K2 | ~~Langfuse: traces appear, LLM calls nest under the run, scores attach, masking works, "Open trace" link~~ | 🤖 after keys |
-| K3 | Tavily / DuckDuckGo live search (only mock search has run) | 🤖 |
+| K3 | ~~DuckDuckGo live search~~ ✅ 13 Oct: live query returned 5 MOM/SingStat hits, all trust tier 1; `safe_fetch` + `extract_content` read a real MOM press release and the SSRF guard blocked `169.254.169.254`. **Tavily still untested** (needs `TAVILY_API_KEY`) | 👤 key, then 🤖 |
 | K4 | ~~Confirm model ids and prices in `llm/costs.py` (M3)~~ | 👤 |
 | M1 | ~~MOM workbook is a disclosed sample built from MOM-sourced figures; optionally point `MOM_EXCEL_URL` at a real MOM download~~ | 👤 decide |
 | M7 | One DB session per event: fine at 50 users; batch if needed | 🤖 |
 | M12 | Mobile layout, long-claim wrapping, empty states | 🤖 |
 
-## 🎨 Frontend UI enhancement with Radix Primitives (planned 12 Oct, approved 13 Oct, not started: wait for go)
+## 🎨 Frontend UI enhancement with Radix Primitives (planned 12 Oct, approved 13 Oct, **built 13 Oct**)
+
+**Status:** U0-U14, U16 and U18 are done: `radix-ui@1.8.1` installed, wrappers in `src/components/ui/`, all three
+phases applied. Checks: lint and typecheck clean, 18 Vitest tests pass (tabs keyboard nav, AlertDialog flow,
+Switch, export menu incl. `asChild`, toasts, progress, filters), build OK. **Bundle:** app shell 303 kB
+(98.6 kB gzip), under the 397 kB baseline, because History and RunView are now lazy routes (RunView chunk
+204 kB, loaded on demand). A browser walk-through on MockLLM found and fixed two defects: the export menu
+crashed the app (`asChild` item with an icon sibling) and the timeline showed a stray horizontal scrollbar.
+**Not verified:** screenshots of the final look (the automation tab was backgrounded, so checks were DOM-level),
+the full keyboard-only demo script, and the mobile layout at a real phone width. **U17:** I kept the existing
+blue/slate palette and added tokens (`canvas`, `surface`, `line`, `ink`, `muted`, agent colours) plus one focus
+ring, rather than a full redesign; light mode only. Review it and say if you want a bolder direction.
 
 Reference: [radix-ui/primitives](https://github.com/radix-ui/primitives). These are unstyled, accessible
 React primitives. Install the single **`radix-ui@^1.8.0`** package and import each primitive by subpath

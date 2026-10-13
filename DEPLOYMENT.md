@@ -78,10 +78,10 @@ docker version; jq --version; make --version
 
 # Terraform, deploy.sh and pause.sh use the AWS CLI's current profile. With IAM Identity Center (SSO),
 # select your profile in every new shell, and log in again when the session expires:
-export AWS_PROFILE=<your-sso-profile>   # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
-aws sso login                           # only when the session has expired
-aws sts get-caller-identity             # must print your account and an AdministratorAccess ARN
-aws configure get region                # must print ap-southeast-1 (lower case)
+export AWS_PROFILE=<your-sso-profile>                               # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
+aws sso login --profile <your-sso-profile>                          # only when the session has expired
+aws sts get-caller-identity --profile <your-sso-profile>            # must print your account and an AdministratorAccess ARN
+aws configure get region --profile <your-sso-profile>               # must print ap-southeast-1 (lower case)
 ```
 
 If `get-caller-identity` fails:

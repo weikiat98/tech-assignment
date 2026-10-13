@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { Card } from "../components/ui";
+import { Button, Card, InlineSwitch } from "../components/ui";
 import DemoControls from "../components/DemoControls";
 
 export default function NewAnalysis() {
@@ -35,24 +35,19 @@ export default function NewAnalysis() {
             }}
           >
             <textarea
-              className="h-28 w-full resize-none rounded-lg border border-slate-300 p-3 text-sm focus:border-brand-500 focus:outline-none"
+              aria-label="Research question"
+              className="h-28 w-full resize-none rounded-lg border border-slate-300 p-3 text-sm focus:border-brand-500"
               placeholder="e.g. Analyse employment trends in the technology sector from 2020-2024"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <label className="flex items-center gap-2 text-sm text-slate-600">
-                <input type="checkbox" checked={webContext} onChange={(e) => setWebContext(e.target.checked)} />
-                Include web context (news, ministry reports)
-              </label>
-              <button
-                disabled={create.isPending || query.trim().length < 3}
-                className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
-              >
+              <InlineSwitch label="Include web context (news, ministry reports)" checked={webContext} onCheckedChange={setWebContext} />
+              <Button type="submit" variant="primary" disabled={create.isPending || query.trim().length < 3}>
                 {create.isPending ? "Starting…" : "Run analysis"}
-              </button>
+              </Button>
             </div>
-            {create.error && <p className="mt-2 text-sm text-red-600">{(create.error as Error).message}</p>}
+            {create.error && <p role="alert" className="mt-2 text-sm text-red-600">{(create.error as Error).message}</p>}
           </form>
         </Card>
         <Card title="Sample questions">
