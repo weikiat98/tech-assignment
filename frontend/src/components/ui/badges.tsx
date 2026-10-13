@@ -1,5 +1,4 @@
-import type { ReactNode } from "react";
-import type { AnalysisStatus } from "../lib/types";
+import type { AnalysisStatus } from "../../lib/types";
 
 const STATUS_STYLES: Record<string, string> = {
   queued: "bg-slate-100 text-slate-700",
@@ -25,30 +24,4 @@ export function TierBadge({ tier }: { tier: number }) {
     "bg-amber-50 text-amber-800 ring-amber-200"];
   const labels = ["", "Tier 1 · official", "Tier 2 · statistical", "Tier 3 · context only"];
   return <span className={`rounded px-1.5 py-0.5 text-[11px] ring-1 ${styles[tier]}`}>{labels[tier]}</span>;
-}
-
-export function Card({ title, children, actions }: { title?: string; children: ReactNode; actions?: ReactNode }) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      {title && (
-        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-          <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
-          {actions}
-        </div>
-      )}
-      <div className="p-4">{children}</div>
-    </section>
-  );
-}
-
-export function ScoreBar({ score }: { score: number }) {
-  const color = score >= 0.85 ? "bg-emerald-500" : score >= 0.6 ? "bg-amber-500" : "bg-red-500";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200">
-        <div className={`h-full ${color}`} style={{ width: `${Math.round(score * 100)}%` }} />
-      </div>
-      <span className="text-xs tabular-nums text-slate-600">{score.toFixed(2)}</span>
-    </div>
-  );
 }
