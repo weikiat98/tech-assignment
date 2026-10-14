@@ -2,21 +2,25 @@
 
 from __future__ import annotations
 
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import delete, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.runs import new_chat, start_run
 from app.api.schemas import AnalysisCreate, AnalysisDetail, AnalysisSummary, ClarifyRequest
 from app.api.security import require_token
+from app.api.summary import build_summary
 from app.config import get_settings
-from app.db.models import AgentEventRow, Analysis
+from app.db.models import AgentEventRow, Analysis, Chat, LLMCallRow
 from app.db.session import get_session
 from app.export import files
+from app.export.docx import to_docx
 from app.export.markdown import render
 from app.main_limiter import limiter
+from app.observability import langfuse as lf
 from app.runner.task_runner import runner
+
+DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
 router = APIRouter(prefix="/api/v1/analyses", tags=["analyses"], dependencies=[Depends(require_token)])
 
@@ -31,11 +35,10 @@ async def _get(session: AsyncSession, analysis_id: str) -> Analysis:
 @router.post("", status_code=202, response_model=AnalysisSummary)
 @limiter.limit(get_settings().rate_limit)
 async def create_analysis(request: Request, body: AnalysisCreate, session: AsyncSession = Depends(get_session)):
-    analysis = Analysis(id=str(uuid.uuid4()), query=body.query.strip(), status="queued",
-                        options={"web_context": body.web_context, "provider_preference": body.provider_preference})
-    session.add(analysis)
-    await session.commit()
-    runner.start(analysis.id, analysis.query, analysis.options)
+    chat = new_chat(session, body.query)  # every analysis belongs to a chat
+    analysis = await start_run(session, chat, body.query,
+                               {"web_context": body.web_context, "provider_preference": body.provider_preference},
+                               turn=1, version=1)
     return AnalysisSummary.model_validate(analysis, from_attributes=True)
 
 
@@ -66,6 +69,16 @@ async def get_events(analysis_id: str, after: int = 0, session: AsyncSession = D
              "tokens": r.tokens, "cost_usd": float(r.cost_usd or 0), "ts": r.created_at.isoformat()} for r in rows]
 
 
+@router.get("/{analysis_id}/summary")
+async def get_summary(analysis_id: str, session: AsyncSession = Depends(get_session)):
+    """What a non-technical reader needs to know about a run, aggregated from our own tables (todo.md CL14)."""
+    analysis = await _get(session, analysis_id)
+    events = (await session.scalars(select(AgentEventRow).where(AgentEventRow.analysis_id == analysis_id)
+                                    .order_by(AgentEventRow.seq))).all()
+    calls = (await session.scalars(select(LLMCallRow).where(LLMCallRow.analysis_id == analysis_id))).all()
+    return build_summary(analysis, events, calls, lf.enabled())
+
+
 @router.post("/{analysis_id}/clarify", status_code=202)
 async def clarify(analysis_id: str, body: ClarifyRequest, session: AsyncSession = Depends(get_session)):
     analysis = await _get(session, analysis_id)
@@ -92,9 +105,11 @@ async def rerun(request: Request, analysis_id: str, session: AsyncSession = Depe
 
 @router.delete("/{analysis_id}", status_code=204)
 async def delete_analysis(analysis_id: str, session: AsyncSession = Depends(get_session)):
-    await _get(session, analysis_id)
+    chat_id = (await _get(session, analysis_id)).chat_id
     await session.execute(delete(AgentEventRow).where(AgentEventRow.analysis_id == analysis_id))
     await session.execute(delete(Analysis).where(Analysis.id == analysis_id))
+    if chat_id and not await session.scalar(select(Analysis.id).where(Analysis.chat_id == chat_id).limit(1)):
+        await session.execute(delete(Chat).where(Chat.id == chat_id))  # last run gone: drop the empty chat
     await session.commit()
     return Response(status_code=204)
 
@@ -124,6 +139,9 @@ async def export(analysis_id: str, format: str = "md", session: AsyncSession = D
             raise HTTPException(status_code=502, detail=f"PDF service unavailable: {exc}") from exc
         return Response(pdf, media_type="application/pdf",
                         headers={"Content-Disposition": f'attachment; filename="{name}.pdf"'})
+    if format == "docx":
+        return Response(to_docx(result), media_type=DOCX_TYPE,
+                        headers={"Content-Disposition": f'attachment; filename="{name}.docx"'})
     if format == "html":
         return Response(files.to_html(result), media_type="text/html")
-    raise HTTPException(status_code=400, detail="format must be one of md, json, csv, pdf, html")
+    raise HTTPException(status_code=400, detail="format must be one of md, json, csv, pdf, docx, html")

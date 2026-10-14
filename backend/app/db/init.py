@@ -6,10 +6,11 @@ Schema changes after the deadline would move to Alembic migrations.
 
 import asyncio
 import random
+import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select, text
 
-from app.db.models import Base, InternalGrantDisbursement, InternalProgrammeEnrolment
+from app.db.models import Analysis, Base, Chat, InternalGrantDisbursement, InternalProgrammeEnrolment
 from app.db.session import SessionLocal, engine
 
 SECTORS = {
@@ -25,9 +26,35 @@ PROGRAMMES = ["Career Conversion Programme", "Skills Upgrading Track"]
 SCHEMES = ["Productivity Grant", "Digitalisation Grant"]
 
 
+ANALYSIS_NEW_COLUMNS = {"chat_id": "VARCHAR(36)", "turn": "INTEGER DEFAULT 1", "version": "INTEGER DEFAULT 1"}
+
+
+def _add_missing_columns(conn) -> None:
+    """create_all never alters an existing table; add the chat columns to databases from before chats."""
+    existing = {c["name"] for c in inspect(conn).get_columns("analyses")}
+    for name, ddl in ANALYSIS_NEW_COLUMNS.items():
+        if name not in existing:
+            conn.execute(text(f"ALTER TABLE analyses ADD COLUMN {name} {ddl}"))
+
+
 async def create_schema() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(_add_missing_columns)
+    await backfill_chats()
+
+
+async def backfill_chats() -> int:
+    """Every analysis from before chats existed becomes a one-question chat. Idempotent."""
+    async with SessionLocal() as session:
+        orphans = (await session.scalars(select(Analysis).where(Analysis.chat_id.is_(None)))).all()
+        for a in orphans:
+            chat = Chat(id=str(uuid.uuid4()), title=a.query.strip()[:80], created_at=a.created_at,
+                        updated_at=a.finished_at or a.created_at)
+            session.add(chat)
+            a.chat_id, a.turn, a.version = chat.id, 1, 1
+        await session.commit()
+        return len(orphans)
 
 
 async def seed_internal() -> int:

@@ -6,14 +6,45 @@ from datetime import UTC, datetime
 
 from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
 
 
 def _now() -> datetime:
     return datetime.now(UTC)
 
 
+class UTCDateTime(TypeDecorator):
+    """timestamptz that stays timezone-aware on SQLite, which drops the offset. Without this the API
+    serialises naive datetimes and browsers read UTC values as local time (todo.md R10)."""
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None and value.tzinfo is not None:
+            value = value.astimezone(UTC)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None and value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value
+
+
 class Base(DeclarativeBase):
     pass
+
+
+class Chat(Base):
+    """A conversation: one or more questions (turns), each answered by an analysis run."""
+
+    __tablename__ = "chats"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    title: Mapped[str] = mapped_column(String(200))
+    pinned: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=_now, index=True)
 
 
 class Analysis(Base):
@@ -22,6 +53,10 @@ class Analysis(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     query: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
+    # Conversation membership. A retry adds a version to the same turn; the newest version is shown.
+    chat_id: Mapped[str | None] = mapped_column(String(36), index=True, nullable=True)
+    turn: Mapped[int] = mapped_column(Integer, default=1)
+    version: Mapped[int] = mapped_column(Integer, default=1)
     options: Mapped[dict] = mapped_column(JSON, default=dict)
     intent: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     plan: Mapped[dict | None] = mapped_column(JSON, nullable=True)
@@ -29,9 +64,9 @@ class Analysis(Base):
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
     total_tokens: Mapped[int] = mapped_column(Integer, default=0)
     total_cost_usd: Mapped[float] = mapped_column(Numeric(10, 5), default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=_now, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
 
 
 class AgentEventRow(Base):
@@ -45,7 +80,7 @@ class AgentEventRow(Base):
     content: Mapped[dict] = mapped_column(JSON, default=dict)
     tokens: Mapped[int] = mapped_column(Integer, default=0)
     cost_usd: Mapped[float] = mapped_column(Numeric(10, 6), default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=_now)
 
 
 class FactRow(Base):
@@ -112,7 +147,7 @@ class LLMCallRow(Base):
     success: Mapped[bool] = mapped_column(default=True)
     fallback_from: Mapped[str | None] = mapped_column(String(20), nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=_now)
 
 
 # --- mock internal systems (synthetic data, clearly labelled) --------------------------

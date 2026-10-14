@@ -5,7 +5,7 @@ import { cn } from "./cn";
 export const Tabs = T.Root;
 
 export function TabsList({ className, ...props }: ComponentProps<typeof T.List>) {
-  return <T.List className={cn("flex gap-1 overflow-x-auto border-b border-line px-3 pt-2", className)} {...props} />;
+  return <T.List className={cn("flex gap-1 overflow-x-auto border-b border-line px-3 pt-2 [scrollbar-width:thin]", className)} {...props} />;
 }
 
 export function TabsTrigger({ className, ...props }: ComponentProps<typeof T.Trigger>) {

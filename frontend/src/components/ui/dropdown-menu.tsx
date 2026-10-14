@@ -13,7 +13,7 @@ export function DropdownMenuContent({ className, children, ...props }: Component
         sideOffset={6}
         collisionPadding={8}
         className={cn(
-          "z-50 min-w-40 rounded-lg border border-line bg-surface p-1 shadow-lg",
+          "z-50 min-w-40 rounded-lg border border-line bg-surface p-1 shadow-float",
           "data-[state=open]:animate-pop-in data-[state=closed]:animate-pop-out",
           className,
         )}
@@ -39,8 +39,8 @@ export function DropdownMenuItem({
         "flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-1.5 text-sm outline-none",
         "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
         tone === "danger"
-          ? "text-red-700 data-[highlighted]:bg-red-50"
-          : "text-ink data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700",
+          ? "text-danger data-[highlighted]:bg-danger-bg"
+          : "text-ink data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700 focus-visible:outline-none",
         className,
       )}
       asChild={asChild}
@@ -62,3 +62,42 @@ export function DropdownMenuItem({
 export const DropdownMenuSeparator = ({ className }: { className?: string }) => (
   <D.Separator className={cn("my-1 h-px bg-line", className)} />
 );
+
+const ITEM =
+  "relative flex cursor-pointer select-none items-center gap-2 rounded-md py-1.5 pl-7 pr-2.5 text-sm text-ink outline-none " +
+  "data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700";
+
+/** A tick shown by Radix's ItemIndicator while the item is checked. */
+const Tick = () => (
+  <span className="absolute left-2 inline-flex w-4 justify-center" aria-hidden>
+    ✓
+  </span>
+);
+
+export function DropdownMenuCheckboxItem({ children, className, ...props }: ComponentProps<typeof D.CheckboxItem>) {
+  return (
+    <D.CheckboxItem className={cn(ITEM, className)} {...props}>
+      <D.ItemIndicator>
+        <Tick />
+      </D.ItemIndicator>
+      {children}
+    </D.CheckboxItem>
+  );
+}
+
+export const DropdownMenuRadioGroup = D.RadioGroup;
+
+export function DropdownMenuRadioItem({ children, className, ...props }: ComponentProps<typeof D.RadioItem>) {
+  return (
+    <D.RadioItem className={cn(ITEM, className)} {...props}>
+      <D.ItemIndicator>
+        <Tick />
+      </D.ItemIndicator>
+      {children}
+    </D.RadioItem>
+  );
+}
+
+export function DropdownMenuLabel({ className, ...props }: ComponentProps<typeof D.Label>) {
+  return <D.Label className={cn("px-2.5 pb-1 pt-1.5 text-2xs font-medium text-muted", className)} {...props} />;
+}

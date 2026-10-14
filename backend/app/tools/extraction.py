@@ -87,9 +87,32 @@ class FetchSingStatArgs(BaseModel):
 
 async def fetch_singstat(ctx: RunContext, resource_id: str, series: list[str]) -> dict:
     start, end = _years(ctx)
+    key = f"singstat:{resource_id}"
+    earlier = ctx.datasets.get(key) if key in ctx.carried_dataset_keys else None
+    if earlier is not None and _covers(earlier, series, start, end):
+        # A follow-up asking for series and years the chat already downloaded: no second fetch.
+        summary = earlier.summary()
+        summary["series"] = summary["series"][:25]
+        summary.pop("quality", None)
+        summary["quality_score"] = earlier.quality.score if earlier.quality else None
+        return {**summary, "reused": True}
     # Fetch two extra years before the window so YoY growth exists for the first year.
     record = await singstat.fetch(resource_id, series or None, (start - 2) if start else None, end)
+    if earlier is not None and earlier.frame is not None and record.frame is not None:
+        # Keep the series fetched for earlier questions, so their facts still have their data behind them.
+        old = earlier.frame[~earlier.frame["series_code"].isin(record.frame["series_code"])]
+        record.frame = pd.concat([record.frame, old], ignore_index=True)
     return await _register(ctx, record)
+
+
+def _covers(record: DatasetRecord, series: list[str], start: int | None, end: int | None) -> bool:
+    frame = record.frame
+    if frame is None or frame.empty:
+        return False
+    if series and not set(map(str, series)) <= set(frame["series_code"].astype(str)):
+        return False
+    years = frame["period"].astype(str).str[:4].astype(int)
+    return (start is None or years.min() <= start) and (end is None or years.max() >= end)
 
 
 # --- Data.gov.sg -----------------------------------------------------------------------

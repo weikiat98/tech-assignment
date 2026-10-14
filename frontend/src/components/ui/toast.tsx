@@ -18,9 +18,9 @@ interface ToastItem extends ToastInput {
 
 const TONES: Record<Tone, string> = {
   info: "border-line bg-surface",
-  success: "border-emerald-200 bg-emerald-50",
-  warning: "border-amber-300 bg-amber-50",
-  error: "border-red-300 bg-red-50",
+  success: "border-ok/40 bg-ok-bg",
+  warning: "border-warn/40 bg-warn-bg",
+  error: "border-danger/40 bg-danger-bg",
 };
 
 const ToastContext = createContext<(t: ToastInput) => void>(() => {});
@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             duration={i.duration}
             onOpenChange={(open) => !open && remove(i.id)}
             className={cn(
-              "flex items-start gap-3 rounded-lg border p-3 shadow-lg",
+              "flex items-start gap-3 rounded-xl border p-3 shadow-float",
               "data-[state=open]:animate-toast-in data-[state=closed]:animate-toast-out",
               TONES[i.tone ?? "info"],
             )}

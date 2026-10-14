@@ -34,6 +34,11 @@ class RunContext:
     web_pages: dict[str, dict[str, Any]] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
 
+    # Follow-ups (runner/followup.py): earlier turns of the chat and what was carried into this run.
+    prior_turns: list[dict[str, Any]] = field(default_factory=list)
+    carried_fact_ids: set[str] = field(default_factory=set)
+    carried_dataset_keys: set[str] = field(default_factory=set)
+
     web_searches_used: int = 0
     web_fetches_used: int = 0
     total_tokens: int = 0

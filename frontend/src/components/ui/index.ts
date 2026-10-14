@@ -13,9 +13,14 @@ export {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
 } from "./dropdown-menu";
 export { ToastProvider, useToast } from "./toast";
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from "./collapsible";
 export { ToggleGroup, ToggleGroupItem } from "./toggle-group";
 export { ScrollArea } from "./scroll-area";
 export { Modal } from "./dialog";
+export { Sheet, SheetClose } from "./sheet";

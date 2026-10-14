@@ -21,6 +21,9 @@ export interface AnalysisSummary {
   finished_at: string | null;
   total_cost_usd: number;
   total_tokens: number;
+  chat_id: string | null;
+  turn: number;
+  version: number;
 }
 
 export interface AgentEvent {
@@ -146,6 +149,11 @@ export interface AnalysisResult {
   total_cost_usd: number;
   trace_url: string | null;
   markdown: string | null;
+  outcome?: string | null;
+  /** Short next questions built from the answered intent. */
+  suggestions?: string[];
+  /** Facts carried over from earlier questions in the chat. */
+  carried_fact_ids?: string[];
 }
 
 export interface AnalysisDetail extends AnalysisSummary {
@@ -169,4 +177,45 @@ export interface ChaosState {
   fail_llm: string[];
   inject_hallucination: boolean;
   enabled?: boolean;
+}
+
+export interface RunSummary {
+  status: AnalysisStatus;
+  outcome: string | null;
+  verified: boolean | null;
+  seconds: number | null;
+  cost_usd: number;
+  models: string[];
+  model_calls: Record<string, number>;
+  llm_fallbacks: string[];
+  steps: number;
+  retries: { rewrites: number; replans: number; failed_steps: number };
+  sources: { key: string; title: string; agency: string | null; state: "live" | "saved_copy" | "failed"; reason: string | null; quality: number | null }[];
+  checks: { numeric_pass_rate: number | null; citation_pass_rate: number | null; entity_pass_rate: number | null };
+  facts_from_earlier_questions: number;
+  worth_knowing: string[];
+  trace_url: string | null;
+}
+
+export type ProviderChoice = "auto" | "openai" | "gemini";
+
+export interface ChatSummary {
+  id: string;
+  title: string;
+  pinned: boolean;
+  created_at: string;
+  updated_at: string;
+  status: AnalysisStatus | null;
+  turns: number;
+}
+
+export interface ChatTurn {
+  turn: number;
+  query: string;
+  /** Oldest first; the last one is shown, earlier ones stay reachable. */
+  versions: AnalysisSummary[];
+}
+
+export interface ChatDetail extends ChatSummary {
+  items: ChatTurn[];
 }
