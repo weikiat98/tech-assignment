@@ -22,7 +22,7 @@ export default function DemoControls() {
   if (data?.enabled === false) {
     return (
       <Card title="Demo controls (chaos)">
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Disabled on this deployment. Failure toggles are available when running locally.
         </p>
       </Card>
@@ -63,7 +63,7 @@ export default function DemoControls() {
           onCheckedChange={() => update.mutate({ inject_hallucination: !data?.inject_hallucination })}
         />
       </div>
-      <p className="mt-3 text-xs text-slate-500">Applies to the next run. Watch the timeline for fallbacks.</p>
+      <p className="mt-3 text-xs text-muted">Applies to the next run. Watch the timeline for fallbacks.</p>
     </Card>
   );
 }

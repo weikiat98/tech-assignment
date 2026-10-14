@@ -69,3 +69,8 @@ STRICT RULES (a verifier checks every claim):
 - Context notes from the web are qualitative; quote them as "reported by <source>" without numbers.
 - limitations: data gaps, fallbacks, quality caveats, synthetic internal data, small samples.
 {feedback}"""
+
+FOLLOW_UP_RULE = """
+This is a follow-up in a conversation. Resolve references such as "this", "that sector" or "the same years"
+from the earlier turns, and keep the earlier sectors, metric and period unless the new question changes them.
+Never ask for clarification when the earlier turns already answer it."""

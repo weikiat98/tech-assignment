@@ -46,13 +46,17 @@ async def test_create_poll_and_export(client):
     assert body["status"] == "completed" and body["result"]["verification"]["passed"]
 
     aid = body["id"]
+    # R10: timestamps carry an explicit UTC offset, even on SQLite, so browsers don't read them as local time.
+    assert body["created_at"].endswith(("Z", "+00:00")) and body["finished_at"].endswith(("Z", "+00:00"))
     md = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "md"})
     assert md.status_code == 200 and md.text.startswith("# ")
     js = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "json"})
     assert js.json()["query"] == MAIN
     csv = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "csv"})
     assert csv.headers["content-type"] == "application/zip" and csv.content[:2] == b"PK"
-    bad = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "docx"})
+    docx = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "docx"})
+    assert docx.status_code == 200 and docx.content[:2] == b"PK"
+    bad = await client.get(f"/api/v1/analyses/{aid}/export", params={"format": "xlsx"})
     assert bad.status_code == 400
 
     events = (await client.get(f"/api/v1/analyses/{aid}/events")).json()

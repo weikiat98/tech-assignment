@@ -9,7 +9,7 @@ export function ToggleGroupItem({ className, ...props }: ComponentProps<typeof G
   return (
     <G.Item
       className={cn(
-        "rounded-full border border-line bg-surface px-2.5 py-0.5 text-[11px] text-muted hover:border-line-strong",
+        "rounded-full border border-line bg-surface px-2.5 py-0.5 text-2xs text-muted hover:border-line-strong",
         "data-[state=on]:border-brand-500 data-[state=on]:bg-brand-50 data-[state=on]:font-medium data-[state=on]:text-brand-700",
         className,
       )}

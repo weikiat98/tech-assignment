@@ -1,29 +1,81 @@
 @import "tailwindcss";
 
+/*
+ * Visual direction (plan.md decision 23): one dark theme, petrol-teal accent on cool grey-green neutrals,
+ * IBM Plex Sans for the UI, Source Serif 4 for the report, a yellow evidence underline on cited numbers.
+ * Every text/background pair here is at least 4.5:1 (WCAG AA).
+ */
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", ui-serif, Georgia, serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Type scale: 11 px is the floor anywhere in the app. */
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 12px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 22px;
+  --text-md: 16px;
+  --text-md--line-height: 26px;
+  --text-lg: 19px;
+  --text-lg--line-height: 26px;
+  --text-xl: 24px;
+  --text-xl--line-height: 30px;
+
+  /* Radius grows with hierarchy: chips 4, controls 6, panels 10, dialogs and toasts 14. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
 
   /* Surfaces, lines and text */
-  --color-canvas: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-sunken: #f1f5f9;
-  --color-line: #e2e8f0;
-  --color-line-strong: #cbd5e1;
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
+  --color-canvas: #0f171c;
+  --color-surface: #162128;
+  --color-surface-sunken: #1c2930;
+  --color-line: #2a3a42;
+  --color-line-strong: #3b4e57;
+  --color-ink: #e6ecea;
+  --color-muted: #9aa9af;
 
-  /* Agents (timeline badges) */
-  --color-agent-coordinator: #7c3aed;
-  --color-agent-extraction: #0284c7;
-  --color-agent-analytics: #059669;
-  --color-agent-writer: #d97706;
-  --color-agent-verifier: #e11d48;
-  --color-agent-system: #64748b;
+  /* Accent (petrol teal). Text on a brand-600 fill uses on-brand. */
+  --color-brand-50: #12302f;
+  --color-brand-100: #184240;
+  --color-brand-500: #4cc2b5;
+  --color-brand-600: #3fb0a5;
+  --color-brand-700: #5cc4b8;
+  --color-on-brand: #0f171c;
+
+  /* The evidence mark: underline on cited numbers; fill for fact chips and the Verified stamp. */
+  --color-evidence: #3a3212;
+  --color-evidence-ink: #f7e08a;
+
+  /* Semantic states (text / tint pairs), separate from the accent. */
+  --color-idle: #a6b3b9;
+  --color-idle-bg: #1f2b31;
+  --color-run: #7fd3c9;
+  --color-run-bg: #12302f;
+  --color-warn: #f2c46d;
+  --color-warn-bg: #3a2a0e;
+  --color-ok: #7bcf98;
+  --color-ok-bg: #12301d;
+  --color-caution: #f2a06b;
+  --color-caution-bg: #3a220f;
+  --color-danger: #f28b82;
+  --color-danger-bg: #3a1614;
+
+  /* Agents (timeline chips): light fills with canvas-coloured text. */
+  --color-agent-coordinator: #a9a6f0;
+  --color-agent-extraction: #7fb8de;
+  --color-agent-analytics: #dda0cc;
+  --color-agent-writer: #cfcb6a;
+  --color-agent-verifier: #b8c5ce;
+
+  /* Only floating layers (menus, tooltips, dialogs, toasts) cast a shadow. */
+  --shadow-float: 0 8px 24px rgb(0 0 0 / 0.45), 0 1px 3px rgb(0 0 0 / 0.35);
 
   /* Enter/exit animations are CSS keyframes, because Radix Presence waits for `animationend`. */
   --animate-overlay-in: overlay-in 150ms ease-out;
@@ -74,10 +126,44 @@
   }
 }
 
-/* One shared keyboard focus ring for every control. */
-:where(a, button, input, textarea, select, [role="tab"], [role="switch"], [role="menuitem"], [tabindex]):focus-visible {
-  outline: 2px solid var(--color-brand-500);
-  outline-offset: 2px;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--text-base--line-height);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One shared keyboard focus ring. In @layer base so a component's own utilities can still override it. */
+  :where(a, button, input, textarea, select, [role="tab"], [role="switch"], [role="menuitem"], [tabindex]):focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+}
+
+/* Cited numbers inside claims (the evidence mark). */
+@utility evidence-mark {
+  font-weight: 500;
+  text-decoration-line: underline;
+  text-decoration-color: var(--color-evidence-ink);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-skip-ink: none;
 }
 
 /* Reduced motion: keep `animationend` firing (Presence needs it) but make it instant. */
@@ -91,33 +177,34 @@
   }
 }
 
-html,
-body,
-#root {
-  height: 100%;
+/* The verified report reads like a policy paper: serif body, 68-character measure. */
+.prose-report {
+  font-family: var(--font-serif);
+  max-width: 68ch;
 }
-
-body {
-  background: var(--color-canvas);
-  color: var(--color-ink);
-}
-
 .prose-report h1 {
-  font-size: 1.35rem;
-  font-weight: 700;
-  margin: 0.5rem 0 0.75rem;
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: 600;
+  margin: 0.25rem 0 0.75rem;
+  text-wrap: balance;
 }
 .prose-report h2 {
-  font-size: 1.05rem;
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
   font-weight: 600;
-  margin: 1.25rem 0 0.5rem;
+  margin: 1.5rem 0 0.5rem;
   padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--color-line);
+  text-wrap: balance;
 }
 .prose-report p,
 .prose-report li {
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: var(--text-md);
+  line-height: var(--text-md--line-height);
+}
+.prose-report p {
+  margin: 0.5rem 0;
 }
 .prose-report ul {
   list-style: disc;
@@ -126,17 +213,27 @@ body {
 }
 .prose-report table {
   width: 100%;
-  font-size: 0.78rem;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
   border-collapse: collapse;
   margin-top: 0.5rem;
 }
 .prose-report th,
 .prose-report td {
   border: 1px solid var(--color-line);
-  padding: 0.25rem 0.4rem;
+  padding: 0.3rem 0.45rem;
   text-align: left;
 }
+.prose-report th {
+  color: var(--color-muted);
+  font-weight: 500;
+}
 .prose-report a {
-  color: #2563eb;
+  color: var(--color-brand-700);
   text-decoration: underline;
+}
+.prose-report code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
 }

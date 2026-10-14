@@ -2,7 +2,7 @@ import type { AgentEvent } from "./types";
 
 export const STAGES = ["Interpret", "Plan", "Extract", "Quality", "Analyse", "Write", "Verify"] as const;
 
-function stageOf(e: AgentEvent): number {
+export function stageOf(e: AgentEvent): number {
   if (e.type === "verification" || e.agent === "verifier") return 6;
   if (e.type === "report_chunk" || e.agent === "writer") return 5;
   if (e.agent === "analytics" || e.type === "chart" || e.type === "fact") return 4;

@@ -165,11 +165,32 @@ class SingStatMCPAdapter:
                         breaker.record(False, blocked=looks_blocked(exc))
                     errors.append(f"{via}: {_root_message(exc)[:160]}")
         cached = snapshots.load_json(SOURCE_ID, name, key)
+        if cached is None and tool == "get_table_data":
+            cached = self._nearest_table_snapshot(name, arguments)
         if cached is None:
             raise SourceError("SingStat unavailable and no snapshot recorded. " + "; ".join(errors))
         payload, recorded_at = cached
         reason = "; ".join(errors) or "offline mode"
         return payload, FetchProvenance(via="snapshot", fallback_reason=reason, recorded_at=recorded_at)
+
+    @staticmethod
+    def _nearest_table_snapshot(name: str, arguments: dict[str, Any]) -> tuple[Any, str] | None:
+        """Offline: serve a request for some series of a table from a recording of the same table that holds
+        them all (a follow-up asks for other sectors than the question that was recorded). Rows are filtered
+        to the requested series, so the result is exactly what the live call would have returned."""
+        wanted = [s for s in str(arguments.get("seriesNoORrowNo") or "").split(",") if s]
+        if not wanted:
+            return None
+        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", name)[:60]
+        for path in sorted((snapshots.root / SOURCE_ID).glob(f"{safe}__*.json")):
+            record = json.loads(path.read_text(encoding="utf-8"))
+            payload = record["payload"]
+            data = payload.get("data", payload)
+            rows = {str(r.get("seriesNo")): r for r in data.get("row", [])}
+            if all(s in rows for s in wanted):
+                trimmed = {**payload, "data": {**data, "row": [rows[s] for s in wanted]}}
+                return trimmed, record.get("recorded_at", "unknown")
+        return None
 
     # --- high-level operations --------------------------------------------------------
 

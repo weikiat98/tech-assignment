@@ -15,14 +15,14 @@ export function Modal({
   hideTitle?: boolean;
   children: ReactNode;
 }) {
-  const heading = <D.Title className="text-base font-semibold text-ink">{title}</D.Title>;
+  const heading = <D.Title className="text-lg font-semibold text-ink">{title}</D.Title>;
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-40 bg-slate-900/50 data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out" />
+        <D.Overlay className="fixed inset-0 z-40 bg-black/60 data-[state=open]:animate-overlay-in data-[state=closed]:animate-overlay-out" />
         <D.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-xl bg-surface p-4 shadow-xl data-[state=open]:animate-pop-in data-[state=closed]:animate-pop-out"
+          className="fixed left-1/2 top-1/2 z-50 max-h-[92vh] w-[calc(100%-2rem)] max-w-5xl -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-xl border border-line bg-surface p-4 shadow-float data-[state=open]:animate-pop-in data-[state=closed]:animate-pop-out"
         >
           <div className="mb-2 flex items-start justify-between gap-3">
             {hideTitle ? <VisuallyHidden.Root asChild>{heading}</VisuallyHidden.Root> : heading}

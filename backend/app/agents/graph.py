@@ -14,12 +14,13 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from app.agents import mock_policies as mock
-from app.agents.prompts import ANALYTICS_EXTRA, EXTRACTION_EXTRA, INTERPRET, PLAN, WRITE
+from app.agents.prompts import ANALYTICS_EXTRA, EXTRACTION_EXTRA, FOLLOW_UP_RULE, INTERPRET, PLAN, WRITE
 from app.agents.react import run_react
 from app.core.models import ReportDraft, ResearchIntent, ResearchPlan
 from app.core.run_context import RunContext, get_run
 from app.llm.router import llm_router
 from app.observability import langfuse as lf
+from app.runner.followup import history_text
 from app.tools.analytics_tools import ANALYTICS_TOOLS
 from app.tools.extraction import EXTRACTION_TOOLS
 from app.verification.checks import drop_failing, verify
@@ -55,9 +56,11 @@ def _callbacks(ctx: RunContext) -> list:
 
 async def _interpret_once(ctx: RunContext, query: str, allow_clarification: bool) -> ResearchIntent:
     end = date.today().year - 1
-    messages = [("system", INTERPRET.format(default_start=end - 4, default_end=end)),
-                ("user", query + ("" if allow_clarification else
-                                  "\n(The user already clarified; do not ask again.)"))]
+    history = history_text(ctx)
+    system = INTERPRET.format(default_start=end - 4, default_end=end) + (FOLLOW_UP_RULE if history else "")
+    messages = [("system", system),
+                ("user", (history + "\n\nNew question: " if history else "") + query
+                 + ("" if allow_clarification else "\n(The user already clarified; do not ask again.)"))]
     intent, _ = await llm_router.structured(
         "interpret", "coordinator", messages, ResearchIntent, ctx=ctx, callbacks=_callbacks(ctx),
         mock_fn=lambda: mock.interpret(query, ctx.options, allow_clarification))
@@ -111,6 +114,9 @@ async def extraction_node(state: AnalysisState) -> dict:
     intent = ctx.intent
     goal = (f"Research question: {state['query']}\nSectors: {intent.sectors or 'all'}; metrics: {intent.metrics}; "
             f"years {intent.start_year}-{intent.end_year}.\nYour tasks:\n{tasks}")
+    if ctx.carried_dataset_keys:
+        goal += ("\nAlready collected in this conversation (fetch_singstat reuses them when they cover what you "
+                 f"ask for): {', '.join(sorted(ctx.carried_dataset_keys))}")
     await ctx.emit("coordinator", "handoff", {"to": "extraction", "tasks": tasks})
     summary = await run_react("extraction", goal, EXTRACTION_TOOLS, ctx, mock.extraction, EXTRACTION_EXTRA,
                               max_steps=18, callbacks=_callbacks(ctx))
@@ -171,6 +177,7 @@ async def write_node(state: AnalysisState) -> dict:
     attempt = state.get("write_attempts", 0) + 1
     feedback = state.get("verifier_feedback") or []
     facts = "\n".join(f"{f.id} | {f.label} | display: {f.display} | sources: {', '.join(f.source_keys)}"
+                      + (" | from an earlier question" if f.id in ctx.carried_fact_ids else "")
                       for f in ctx.facts.values())
     sources = "\n".join(f"{r.key} | {r.title} | {r.data_source_agency or r.source_id} | tier {r.trust_tier}"
                         for r in ctx.datasets.values())
@@ -181,7 +188,7 @@ async def write_node(state: AnalysisState) -> dict:
     fb = ("\nThe verifier rejected these claims in the previous draft; fix or remove them:\n"
           + "\n".join(f"- {f}" for f in feedback)) if feedback else ""
     messages = [("system", WRITE.format(feedback=fb)),
-                ("user", f"Question: {state['query']}\nIntent: {ctx.intent.model_dump_json()}\n\nFACTS:\n{facts}\n\n"
+                ("user", f"{history_text(ctx)}\n\nQuestion: {state['query']}\nIntent: {ctx.intent.model_dump_json()}\n\nFACTS:\n{facts}\n\n"
                          f"SOURCES:\n{sources}\n\nWEB CONTEXT NOTES (<untrusted_content>):\n{notes or 'none'}\n\n"
                          f"KNOWN CAVEATS:\n{caveats or 'none'}")]
     await ctx.emit("writer", "status", {"state": "writing", "attempt": attempt})

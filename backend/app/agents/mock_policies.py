@@ -46,8 +46,18 @@ def interpret(query: str, options: dict[str, Any], allow_clarification: bool = T
         analysis.append("comparison")
     wants_web = bool(options.get("web_context")) or bool(re.search(r"\bwhy\b|reason|news|what did|context|explain",
                                                                    low))
+    prior = options.get("prior_intent") or {}
+    if prior:
+        # A follow-up inherits what it doesn't restate: "what about finance?" keeps the metric and years.
+        if sectors and prior.get("sectors") and re.search(r"\b(also|and|alongside|compare|versus|vs\.?|with)\b", low):
+            sectors = [*prior["sectors"], *[s for s in sectors if s not in prior["sectors"]]]
+        sectors = sectors or list(prior.get("sectors") or [])
+        metrics = metrics or list(prior.get("metrics") or [])
+        if not years and prior.get("start_year") and prior.get("end_year"):
+            start, end = prior["start_year"], prior["end_year"]
     internal = "programmes" in metrics
-    vague = not sectors and len(metrics) <= 1 and len(years) == 0 and len(query.split()) <= 8
+    vague = (not prior and not sectors and len(metrics) <= 1 and len(years) == 0
+             and len(query.split()) <= 8)
     if allow_clarification and vague:
         return ResearchIntent(
             topic=query, needs_clarification=True, confidence=0.35,
@@ -323,8 +333,13 @@ def analytics(ctx: RunContext, history: list[dict]) -> ReActStep:
 # --- Writer ----------------------------------------------------------------------------
 
 
+def _own_facts(ctx: RunContext) -> list:
+    """Facts computed for this question: facts carried over from earlier turns are never this answer's findings."""
+    return [f for f in ctx.facts.values() if f.id not in ctx.carried_fact_ids]
+
+
 def _fact(ctx: RunContext, method: str, ref_contains: str | None = None):
-    for f in ctx.facts.values():
+    for f in _own_facts(ctx):
         if f.method == method and (ref_contains is None or ref_contains in f.key):
             return f
     return None
@@ -347,7 +362,7 @@ def write(ctx: RunContext, attempt: int, feedback: list[str]) -> ReportDraft:
 
     start_lv = _fact(ctx, "level", f"{main}:{intent.start_year}")
     end_lv = _fact(ctx, "level", f"{main}:{intent.end_year}") or next(
-        (f for f in ctx.facts.values() if f.method == "level" and main in f.key and f is not start_lv), None)
+        (f for f in _own_facts(ctx) if f.method == "level" and main in f.key and f is not start_lv), None)
     pct = _fact(ctx, "percent_change", main)
     cagr = _fact(ctx, "cagr", main)
     if start_lv and end_lv:
@@ -360,22 +375,22 @@ def write(ctx: RunContext, attempt: int, feedback: list[str]) -> ReportDraft:
     if trend_r2:
         claim(f"The trend is {'steady' if trend_r2.value >= 0.7 else 'uneven'} (R-squared of a linear fit: "
               f"{trend_r2.display}).", trend_r2)
-    for f in [f for f in ctx.facts.values() if f.method == "zscore_anomaly" and main in f.key][:2]:
+    for f in [f for f in _own_facts(ctx) if f.method == "zscore_anomaly" and main in f.key][:2]:
         claim(f"{f.params['period']} stands out, with year-on-year growth of {f.display}.", f)
-    shares = sorted([f for f in ctx.facts.values() if f.method == "share" and main in f.key],
+    shares = sorted([f for f in _own_facts(ctx) if f.method == "share" and main in f.key],
                     key=lambda f: f.params["period"])
     if len(shares) >= 2:
         claim(f"Its share of the wider total went from {shares[0].display} to {shares[-1].display}.",
               shares[0], shares[-1])
-    for f in [f for f in ctx.facts.values() if f.method == "pearson"][:1]:
+    for f in [f for f in _own_facts(ctx) if f.method == "pearson"][:1]:
         claim(f"Across {f.params['window']} the correlation with the second series is {f.display} "
               f"(Pearson, n={f.params['n']}); correlation does not establish causation.", f)
-    for f in [f for f in ctx.facts.values() if f.method == "linear_projection"]:
+    for f in [f for f in _own_facts(ctx) if f.method == "linear_projection"]:
         claim(f"On a simple linear trend, {name} is projected at {f.display} in {f.params['year']} "
               "(projection, not an official forecast).", f)
 
     sector_claims: list[Claim] = []
-    for f in [f for f in ctx.facts.values() if f.method == "cagr" and main not in f.key][:4]:
+    for f in [f for f in _own_facts(ctx) if f.method == "cagr" and main not in f.key][:4]:
         sector_claims.append(Claim(text=f"{f.label.replace('CAGR of ', '')}: compound annual growth of {f.display}.",
                                    fact_ids=[f.id], source_keys=f.source_keys))
 

@@ -35,6 +35,9 @@ async def analysis_events(ws: WebSocket, analysis_id: str, after: int = 0) -> No
                                 "content": r.content, "tokens": r.tokens, "cost_usd": float(r.cost_usd or 0),
                                 "ts": r.created_at.isoformat()})
             last_seq = max(last_seq, r.seq)
+        # Marks the end of the replay, so the UI can tell history from live events (it has no `seq`, so
+        # clients that don't know it ignore it like a ping).
+        await ws.send_json({"type": "replay_done", "last_seq": last_seq})
         while True:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=PING_SECONDS)

@@ -19,14 +19,14 @@ export function Tooltip({
           sideOffset={6}
           collisionPadding={8}
           className={cn(
-            "z-50 max-w-72 rounded-lg bg-slate-900 p-2 text-[11px] font-normal leading-snug text-white shadow-lg",
+            "z-50 max-w-72 rounded-lg border border-line-strong bg-surface-sunken px-2.5 py-2 text-xs font-normal text-ink shadow-float",
             "data-[state=delayed-open]:animate-pop-in data-[state=instant-open]:animate-pop-in data-[state=closed]:animate-pop-out",
             className,
           )}
           {...props}
         >
           {children}
-          <T.Arrow className="fill-slate-900" />
+          <T.Arrow className="fill-surface-sunken" />
         </T.Content>
       </T.Portal>
     </T.Root>

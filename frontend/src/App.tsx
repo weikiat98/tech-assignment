@@ -1,54 +1,37 @@
-import { lazy, Suspense, type ReactNode } from "react";
-import { NavLink, Route, Routes } from "react-router-dom";
+import { lazy } from "react";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import ChatShell from "./components/ChatShell";
 import TokenGate from "./components/TokenGate";
-import NewAnalysis from "./pages/NewAnalysis";
-// Heavier routes load on demand so the first screen stays small.
-const RunView = lazy(() => import("./pages/RunView"));
-const History = lazy(() => import("./pages/History"));
+import { ShellProvider } from "./components/shell";
+import { api } from "./lib/api";
+import Home from "./pages/Home";
+// The chat page (answers, charts, preview) loads on demand so the first screen stays small.
+const Chat = lazy(() => import("./pages/Chat"));
 
-function NavItem({ to, children }: { to: string; children: ReactNode }) {
-  return (
-    <NavLink
-      to={to}
-      end
-      className={({ isActive }) =>
-        `rounded-md px-3 py-1.5 text-sm font-medium ${
-          isActive ? "bg-white/15 text-white" : "text-slate-300 hover:text-white"
-        }`
-      }
-    >
-      {children}
-    </NavLink>
-  );
+/** Links to a single run (`/analyses/:id`, from before chats existed) open the chat that holds it. */
+function LegacyRun() {
+  const { id } = useParams<{ id: string }>();
+  const { data, error } = useQuery({ queryKey: ["analysis", id], queryFn: () => api.getAnalysis(id!) });
+  if (error) return <Navigate to="/" replace />;
+  if (!data) return <p className="p-4 text-sm text-muted">Loading…</p>;
+  return <Navigate to={data.chat_id ? `/chats/${data.chat_id}` : "/"} replace />;
 }
 
 export default function App() {
   return (
-    <div className="flex min-h-full flex-col">
-      <header className="bg-slate-900">
-        <div className="mx-auto flex max-w-[1500px] items-center gap-6 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <div className="grid h-7 w-7 place-items-center rounded-md bg-brand-600 text-sm font-bold text-white">PA</div>
-            <span className="font-semibold text-white">Policy Analytics</span>
-            <span className="hidden text-xs text-slate-400 sm:inline">agentic research for Singapore data</span>
-          </div>
-          <nav className="flex gap-1">
-            <NavItem to="/">New analysis</NavItem>
-            <NavItem to="/history">History</NavItem>
-          </nav>
-        </div>
-      </header>
-      <main className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-5">
-        <TokenGate>
-          <Suspense fallback={<p className="text-sm text-slate-500">Loading…</p>}>
+    <TokenGate>
+      <ShellProvider>
+        <ChatShell>
           <Routes>
-            <Route path="/" element={<NewAnalysis />} />
-            <Route path="/analyses/:id" element={<RunView />} />
-            <Route path="/history" element={<History />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/chats/:id" element={<Chat />} />
+            <Route path="/analyses/:id" element={<LegacyRun />} />
+            <Route path="/history" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          </Suspense>
-        </TokenGate>
-      </main>
-    </div>
+        </ChatShell>
+      </ShellProvider>
+    </TokenGate>
   );
 }

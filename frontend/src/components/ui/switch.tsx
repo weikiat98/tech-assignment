@@ -12,18 +12,18 @@ export function Switch({
   const id = useId();
   return (
     <div className={cn("flex items-center justify-between gap-2", className)}>
-      <Label.Root htmlFor={id} className="cursor-pointer text-sm text-slate-700">
+      <Label.Root htmlFor={id} className="cursor-pointer text-sm text-ink">
         {label}
       </Label.Root>
       <S.Root
         id={id}
         className={cn(
-          "relative h-5 w-9 shrink-0 rounded-full bg-slate-300 transition-colors",
-          tone === "danger" ? "data-[state=checked]:bg-red-500" : "data-[state=checked]:bg-brand-600",
+          "relative h-5 w-9 shrink-0 rounded-full bg-line-strong transition-colors",
+          tone === "danger" ? "data-[state=checked]:bg-danger" : "data-[state=checked]:bg-brand-600",
         )}
         {...props}
       >
-        <S.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[18px]" />
+        <S.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-ink transition-transform data-[state=checked]:translate-x-[18px]" />
       </S.Root>
     </div>
   );
@@ -36,10 +36,10 @@ export function InlineSwitch({ label, ...props }: { label: string } & ComponentP
     <div className="flex items-center gap-2">
       <S.Root
         id={id}
-        className="relative h-4 w-7 shrink-0 rounded-full bg-slate-300 transition-colors data-[state=checked]:bg-brand-600"
+        className="relative h-4 w-7 shrink-0 rounded-full bg-line-strong transition-colors data-[state=checked]:bg-brand-600"
         {...props}
       >
-        <S.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[14px]" />
+        <S.Thumb className="block h-3 w-3 translate-x-0.5 rounded-full bg-ink transition-transform data-[state=checked]:translate-x-[14px]" />
       </S.Root>
       <Label.Root htmlFor={id} className="cursor-pointer text-sm text-muted">
         {label}

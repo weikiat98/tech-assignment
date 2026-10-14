@@ -1,4 +1,14 @@
-import type { AgentEvent, AnalysisDetail, AnalysisSummary, ChaosState, RuntimeConfig } from "./types";
+import type {
+  AgentEvent,
+  AnalysisDetail,
+  AnalysisSummary,
+  ChaosState,
+  ChatDetail,
+  ChatSummary,
+  ProviderChoice,
+  RunSummary,
+  RuntimeConfig,
+} from "./types";
 
 const TOKEN_KEY = "policy-analytics-token";
 
@@ -54,6 +64,14 @@ export interface PublicConfig {
   sample_queries: string[];
 }
 
+export interface MessageOptions {
+  webContext: boolean;
+  provider: ProviderChoice;
+}
+
+const messageBody = (query: string, o: MessageOptions) =>
+  JSON.stringify({ query, web_context: o.webContext, provider_preference: o.provider === "auto" ? null : o.provider });
+
 export const api = {
   publicConfig: () => request<PublicConfig>("/api/v1/public-config"),
   config: () => request<RuntimeConfig>("/api/v1/config"),
@@ -64,6 +82,20 @@ export const api = {
     }),
   listAnalyses: (q?: string) =>
     request<AnalysisSummary[]>(`/api/v1/analyses${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  createChat: (query: string, o: MessageOptions) =>
+    request<ChatDetail>("/api/v1/chats", { method: "POST", body: messageBody(query, o) }),
+  listChats: (q?: string) => request<ChatSummary[]>(`/api/v1/chats${q ? `?q=${encodeURIComponent(q)}` : ""}`),
+  getChat: (id: string) => request<ChatDetail>(`/api/v1/chats/${id}`),
+  renameChat: (id: string, title: string) =>
+    request<ChatSummary>(`/api/v1/chats/${id}`, { method: "PATCH", body: JSON.stringify({ title }) }),
+  pinChat: (id: string, pinned: boolean) =>
+    request<ChatSummary>(`/api/v1/chats/${id}`, { method: "PATCH", body: JSON.stringify({ pinned }) }),
+  deleteChat: (id: string) => request<void>(`/api/v1/chats/${id}`, { method: "DELETE" }),
+  sendMessage: (chatId: string, query: string, o: MessageOptions) =>
+    request<ChatDetail>(`/api/v1/chats/${chatId}/messages`, { method: "POST", body: messageBody(query, o) }),
+  retryTurn: (chatId: string, turn: number) =>
+    request<ChatDetail>(`/api/v1/chats/${chatId}/turns/${turn}/retry`, { method: "POST" }),
+  summary: (id: string) => request<RunSummary>(`/api/v1/analyses/${id}/summary`),
   getAnalysis: (id: string) => request<AnalysisDetail>(`/api/v1/analyses/${id}`),
   events: (id: string, after = 0) => request<AgentEvent[]>(`/api/v1/analyses/${id}/events?after=${after}`),
   clarify: (id: string, answer: string) =>

@@ -14,6 +14,7 @@ import structlog
 from langgraph.types import Command
 
 from app.agents.graph import graph
+from app.agents.suggestions import follow_ups
 from app.config import get_settings
 from app.core.models import AgentEvent
 from app.core.run_context import RunContext, current_run
@@ -30,6 +31,7 @@ from app.db.session import SessionLocal
 from app.export.markdown import render
 from app.llm.router import llm_router
 from app.observability import langfuse as lf
+from app.runner.followup import carry_context
 
 log = structlog.get_logger()
 
@@ -72,8 +74,12 @@ class TaskRunner:
             except Exception:  # noqa: BLE001 - eviction is best-effort
                 log.warning("checkpoint_evict_failed", run_id=old)
 
-    def start(self, run_id: str, query: str, options: dict[str, Any]) -> None:
+    def start(self, run_id: str, query: str, options: dict[str, Any],
+              prior: list[dict[str, Any]] | None = None) -> None:
         ctx = RunContext(run_id=run_id, query=query, options=dict(options), sink=persist_event)
+        if prior:
+            carry_context(ctx, prior, self.contexts)
+            ctx.options["prior_intent"] = ctx.prior_turns[-1]["intent"]
         self.contexts[run_id] = ctx
         self.tasks[run_id] = asyncio.create_task(self._execute(ctx, {"query": query}))
 
@@ -164,6 +170,8 @@ class TaskRunner:
             "outcome": values.get("outcome"),
             "extraction_summary": values.get("extraction_summary"),
             "analytics_summary": values.get("analytics_summary"),
+            "suggestions": follow_ups(values.get("intent")) if values.get("outcome") != "out_of_scope" else [],
+            "carried_fact_ids": sorted(ctx.carried_fact_ids),
         }
         result = _jsonable(result)
         result["markdown"] = render(result) if result.get("report") else None

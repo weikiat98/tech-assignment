@@ -9,7 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from app.config import get_settings
+from app.config import PROVIDER_ALIASES, get_settings
 from app.core.chaos import chaos
 from app.core.run_context import RunContext
 from app.llm.costs import cost_usd
@@ -122,13 +122,22 @@ class LLMRouter:
                 previous = name
         raise AllProvidersFailed("; ".join(errors) or "no LLM provider configured")
 
+    @staticmethod
+    def _preferred(chain: list[str], ctx: RunContext | None) -> list[str]:
+        """The user's model choice goes first; the rest of the chain stays as fallback (todo.md CL-b)."""
+        pref = ((ctx.options.get("provider_preference") if ctx else None) or "").strip().lower()
+        wanted = PROVIDER_ALIASES.get(pref, pref)
+        if wanted in chain and chain[0] != wanted:
+            return [wanted, *[p for p in chain if p != wanted]]
+        return chain
+
     async def _budgeted_chain(self, ctx: RunContext | None, agent: str, task: str) -> list[str]:
         """The provider chain, cut to the scripted MockLLM once a run has spent its LLM budget.
 
         RUN_LLM_BUDGET_USD caps what one analysis can cost on paid providers (the deployed URL is
         public). Past the cap the run still finishes, on MockLLM, and the report says so.
         """
-        chain = self.chain()
+        chain = self._preferred(self.chain(), ctx)
         budget = get_settings().run_llm_budget_usd
         if ctx is None or budget <= 0 or ctx.total_cost_usd < budget or chain == ["mock"]:
             return chain
