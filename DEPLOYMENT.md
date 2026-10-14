@@ -57,6 +57,16 @@ Run these from **Git Bash** on Windows, or **Terminal** (zsh or bash) on macOS, 
 scripts are bash). Steps marked 💰 create billable
 resources.
 
+**Every AWS command below (`make aws-*`, `terraform`, `aws ...`, `infra/scripts/*`) uses the AWS CLI's
+*current* profile, not necessarily your SSO one.** If `AWS_PROFILE` is unset they fall back to the
+`default` profile, which on many machines holds a stale access key and fails with
+`InvalidClientTokenId`. In **every new shell**, before step 2:
+
+```bash
+export AWS_PROFILE=<your-sso-profile>     # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
+aws sts get-caller-identity               # sanity check: must show your SSO AdministratorAccess ARN
+```
+
 ### Step 0: prerequisites (once)
 
 On macOS, install the tools with [Homebrew](https://brew.sh) (Docker Desktop must be running before
@@ -79,17 +89,19 @@ docker version; jq --version; make --version
 # Terraform, deploy.sh and pause.sh use the AWS CLI's current profile. With IAM Identity Center (SSO),
 # select your profile in every new shell, and log in again when the session expires:
 export AWS_PROFILE=<your-sso-profile>                               # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
-aws sso login --profile <your-sso-profile>                          # only when the session has expired
-aws sts get-caller-identity --profile <your-sso-profile>            # must print your account and an AdministratorAccess ARN
-aws configure get region --profile <your-sso-profile>               # must print ap-southeast-1 (lower case)
+aws sso login                                                       # only when the session has expired
+aws sts get-caller-identity                                         # must print your account and an AdministratorAccess ARN
+aws configure get region                                            # must print ap-southeast-1 (lower case)
 ```
 
 If `get-caller-identity` fails:
 
 - `Credential should be scoped to a valid region`: the region is set in upper case. Run
-  `aws configure set region ap-southeast-1`.
-- `InvalidClientTokenId` / `The security token included in the request is invalid`: the stored access
-  key is wrong, deleted or inactive. Create a new access key for your IAM user (IAM → Users → Security
+  `aws configure set region ap-southeast-1 --profile <your-sso-profile>`.
+- `InvalidClientTokenId` / `The security token included in the request is invalid`: usually
+  `AWS_PROFILE` is not set in this shell, so the CLI is using the `default` profile and its stale access
+  key. Run `export AWS_PROFILE=<your-sso-profile>` and retry (`aws configure list-profiles` shows what
+  exists). If you do use access keys, the key is wrong, deleted or inactive: create a new access key for your IAM user (IAM → Users → Security
   credentials) and run `aws configure`, or use IAM Identity Center with `aws configure sso` and then
   `export AWS_PROFILE=<profile>`.
 
@@ -102,19 +114,25 @@ of defence for the API keys you put in AWS.
 cp infra/terraform/aws/terraform.tfvars.example infra/terraform/aws/terraform.tfvars
 ```
 
-Edit `terraform.tfvars` (git-ignored):
+`terraform.tfvars.example` is the committed template; `terraform.tfvars` is your git-ignored copy, and the
+only one Terraform reads (the `.example` file is ignored). Edit `terraform.tfvars`; the template's
+`REPLACE_ME` values must all be replaced:
 
 ```hcl
 github_repo        = "weikiat98/tech-assignment"   # owner/repo allowed to deploy via GitHub OIDC
+github_owner_id    = ""                            # leave "" unless step 7's AssumeRole error says otherwise
+github_repo_id     = ""
 alert_email        = "you@example.com"             # AWS Budgets alerts (confirm the subscription email)
 monthly_budget_usd = 30
-langfuse_host      = "https://us.cloud.langfuse.com"  # your Langfuse region
+langfuse_host      = "https://us.cloud.langfuse.com"  # US; EU is https://cloud.langfuse.com
 ```
 
 ### Step 2: plan (free, read-only)
 
+Needs step 1 done and `AWS_PROFILE` set (see the top of this section): `plan` reads your AWS account.
+
 ```bash
-make aws-plan        # terraform init + plan -out tfplan
+make aws-plan        # terraform init -upgrade + plan -out tfplan
 ```
 
 Review the plan: roughly 45 resources (VPC, subnets, security groups, ECR, RDS, Secrets Manager, IAM roles
@@ -180,6 +198,7 @@ when a task starts, so after changing them later, roll the api with
 ### Step 5: first deploy from your machine 💰
 
 ```bash
+export AWS_PROFILE=<your-sso-profile>   # if this is a new shell; also needs Docker running
 make aws-deploy      # = bash infra/scripts/deploy.sh
 ```
 
@@ -201,7 +220,7 @@ Open the `app_url` output:
 - the system card shows the LLM chain (OpenAI → Gemini if keys are set) and tracing status;
 - the demo controls card says the toggles are disabled on this deployment.
 
-Logs: `aws logs tail /ecs/policy-analytics/api --follow` (also `/gotenberg` and `/web`).
+Logs (same `AWS_PROFILE`): `aws logs tail /ecs/policy-analytics/api --follow` (also `/gotenberg` and `/web`).
 
 ### Step 7: deploy through the pipeline (GitHub Actions + OIDC)
 
@@ -249,6 +268,7 @@ task-definition revision (`aws ecs update-service --task-definition policy-analy
 ### Step 8: pause between sessions, destroy at the end
 
 ```bash
+export AWS_PROFILE=<your-sso-profile>   # if this is a new shell
 make aws-pause       # services to 0 tasks, RDS stopped: about US$1/day (ALB + storage)
 make aws-resume      # start RDS, wait, scale services back to 1 (about 10 minutes)
 make aws-destroy     # delete everything (ECR images and secrets included)

@@ -35,7 +35,10 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
+    # index.html (and any SPA route) must be revalidated on every visit. Its hashed /assets files are
+    # immutable for 30 days, so a browser that reuses a stale page keeps showing the old UI.
     location / {
+        add_header Cache-Control "no-cache";
         try_files $uri /index.html;
     }
 }
