@@ -6,6 +6,9 @@ import type {
   ChatDetail,
   ChatSummary,
   ProviderChoice,
+  RunActivity,
+  RunActivityPeriod,
+  RunActivityRow,
   RunSummary,
   RuntimeConfig,
 } from "./types";
@@ -96,6 +99,11 @@ export const api = {
   retryTurn: (chatId: string, turn: number) =>
     request<ChatDetail>(`/api/v1/chats/${chatId}/turns/${turn}/retry`, { method: "POST" }),
   summary: (id: string) => request<RunSummary>(`/api/v1/analyses/${id}/summary`),
+  /** Run totals per week, month or year, bucketed in the viewer's time zone. */
+  activity: (period: RunActivityPeriod, tz: string) =>
+    request<RunActivity>(`/api/v1/activity?period=${period}&tz=${encodeURIComponent(tz)}`),
+  activityRuns: (from: string, to: string) =>
+    request<RunActivityRow[]>(`/api/v1/activity/runs?start=${encodeURIComponent(from)}&end=${encodeURIComponent(to)}`),
   getAnalysis: (id: string) => request<AnalysisDetail>(`/api/v1/analyses/${id}`),
   events: (id: string, after = 0) => request<AgentEvent[]>(`/api/v1/analyses/${id}/events?after=${after}`),
   clarify: (id: string, answer: string) =>

@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api import analyses, chats, meta, ws
+from app.api import activity, analyses, chats, meta, ws
 from app.config import get_settings
 from app.db.init import create_schema, seed_internal
 from app.main_limiter import limiter
@@ -74,4 +74,5 @@ app.include_router(meta.public)
 app.include_router(meta.router)
 app.include_router(analyses.router)
 app.include_router(chats.router)
+app.include_router(activity.router)
 app.include_router(ws.router)

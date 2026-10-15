@@ -53,9 +53,30 @@ Internet ──HTTPS──▶ CloudFront (*.cloudfront.net certificate, no domai
 
 ## 3. AWS step by step
 
-Run these from **Git Bash** on Windows, or **Terminal** (zsh or bash) on macOS, in the repo root (the
-scripts are bash). Steps marked 💰 create billable
-resources.
+Run everything from the repo root. Steps marked 💰 create billable resources.
+
+**Which terminal to use**
+
+| Your machine | Use | Why |
+|---|---|---|
+| Windows | **Git Bash** (installed with [Git for Windows](https://git-scm.com/download/win)) for everything, except the one PowerShell option in step 4 | `make aws-deploy`, `aws-pause` and `aws-resume` run `bash infra/scripts/*.sh`. In PowerShell or cmd, `bash` is not on PATH, so they fail with *"The system cannot find the file specified"*. |
+| macOS | **Terminal** (zsh or bash) for everything | `bash` is built in; nothing else is needed. |
+
+| Command | Windows | macOS |
+|---|---|---|
+| `make aws-plan`, `make aws-apply`, `make aws-destroy` (only call `terraform`) | Git Bash (PowerShell also works) | Terminal |
+| `make aws-deploy`, `make aws-pause`, `make aws-resume` (call `bash infra/scripts/*.sh`) | **Git Bash only** | Terminal |
+| `bash infra/scripts/set-secrets.sh` (step 4) | Git Bash | Terminal |
+| `infra\scripts\set-secrets.ps1` (step 4) | **PowerShell only** | not applicable |
+| `aws ...`, `terraform ...`, `cp`, `cat`, `rm` snippets | Git Bash (the `cp`/`cat`/`rm` and `export` snippets don't run in PowerShell) | Terminal |
+
+The code blocks below are bash unless labelled `powershell`. The `export AWS_PROFILE=...` line is bash;
+the PowerShell equivalent is `$env:AWS_PROFILE = "<your-sso-profile>"`, and the variable only applies
+to the shell window it was set in, so set it again in every new window.
+
+**Check before you start** (Git Bash on Windows): `bash --version`, `make --version`, `aws --version`
+and `terraform version` should all print a version. If `make` is not found in Git Bash, install it
+(`winget install ezwinports.make`) and reopen the terminal.
 
 **Every AWS command below (`make aws-*`, `terraform`, `aws ...`, `infra/scripts/*`) uses the AWS CLI's
 *current* profile, not necessarily your SSO one.** If `AWS_PROFILE` is unset they fall back to the
@@ -63,23 +84,33 @@ resources.
 `InvalidClientTokenId`. In **every new shell**, before step 2:
 
 ```bash
+# Git Bash (Windows) / Terminal (macOS)
 export AWS_PROFILE=<your-sso-profile>     # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
 aws sts get-caller-identity               # sanity check: must show your SSO AdministratorAccess ARN
 ```
 
 ### Step 0: prerequisites (once)
 
-On macOS, install the tools with [Homebrew](https://brew.sh) (Docker Desktop must be running before
-step 5):
+**macOS (Terminal):** install the tools with [Homebrew](https://brew.sh) (Docker Desktop must be running
+before step 5):
 
 ```bash
 brew install awscli terraform jq make
 brew install --cask docker
 ```
 
+**Windows (PowerShell, once):** install the tools, then close PowerShell and open **Git Bash** for
+every later step:
+
+```powershell
+winget install Git.Git Amazon.AWSCLI Hashicorp.Terraform ezwinports.make jqlang.jq Docker.DockerDesktop
+```
+
 (If `brew install terraform` is refused, use HashiCorp's tap: `brew tap hashicorp/tap && brew install
 hashicorp/tap/terraform`.) Apple Silicon Macs are fine: `deploy.sh` builds `linux/amd64` images, which is what
 Fargate runs here.
+
+Then verify (Git Bash on Windows, Terminal on macOS):
 
 ```bash
 aws --version                  # AWS CLI v2
@@ -157,15 +188,15 @@ If your account already has a GitHub OIDC provider (from another project), the a
 
 Terraform creates the secret with placeholders only, so keys never enter Terraform state.
 
-**Easiest on macOS/Linux:** run the bash helper (needs `aws`, `jq`, `openssl`). It does the same as the
-PowerShell one below:
+**Easiest on macOS/Linux (Terminal):** run the bash helper (needs `aws`, `jq`, `openssl`). It does the
+same as the PowerShell one below:
 
 ```bash
 export AWS_PROFILE=<your-sso-profile>
 bash infra/scripts/set-secrets.sh
 ```
 
-**Easiest on Windows (PowerShell):** run the helper. It asks for each key with hidden typing (Enter skips),
+**Easiest on Windows (open PowerShell for this step only):** run the helper. It asks for each key with hidden typing (Enter skips),
 creates the access token, uploads, deletes the temporary file, and prints the token:
 
 ```powershell
@@ -173,7 +204,7 @@ $env:AWS_PROFILE = "<your-sso-profile>"
 powershell -ExecutionPolicy Bypass -File infra\scripts\set-secrets.ps1
 ```
 
-**Manual (bash, macOS/Linux/Git Bash):** write the real values to a temporary file, upload, then delete it:
+**Manual (Git Bash on Windows, Terminal on macOS/Linux):** write the real values to a temporary file, upload, then delete it:
 
 ```bash
 cat > secrets.json <<'EOF'   # on macOS, generate the token with: openssl rand -hex 24
@@ -196,6 +227,8 @@ when a task starts, so after changing them later, roll the api with
 `aws ecs update-service --cluster policy-analytics --service <api_service> --force-new-deployment`.
 
 ### Step 5: first deploy from your machine 💰
+
+Git Bash on Windows (not PowerShell), Terminal on macOS:
 
 ```bash
 export AWS_PROFILE=<your-sso-profile>   # if this is a new shell; also needs Docker running
@@ -266,6 +299,9 @@ To return to an earlier version, re-run the workflow on that commit, or point th
 task-definition revision (`aws ecs update-service --task-definition policy-analytics-api:<revision>`).
 
 ### Step 8: pause between sessions, destroy at the end
+
+Git Bash on Windows, Terminal on macOS. `aws-pause` and `aws-resume` fail from PowerShell or cmd
+(*"The system cannot find the file specified"*), because they need `bash`.
 
 ```bash
 export AWS_PROFILE=<your-sso-profile>   # if this is a new shell
