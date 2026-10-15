@@ -26,7 +26,7 @@ export default function Home() {
   return (
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col justify-center gap-6 overflow-y-auto px-4 py-10">
       <div className="text-center">
-        <h1 className="text-[44px] font-semibold leading-[52px] tracking-[0.3em] text-ink">OWL</h1>
+        <h1 className="text-[44px] font-semibold leading-[52px] text-ink">OWL</h1>
         <p className="mt-2 text-md text-muted text-balance">
           Ask about Singapore's economy and labour market. Every number in the answer is checked against official data.
         </p>

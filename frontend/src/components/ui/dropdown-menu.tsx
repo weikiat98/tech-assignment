@@ -67,19 +67,20 @@ const ITEM =
   "relative flex cursor-pointer select-none items-center gap-2 rounded-md py-1.5 pl-7 pr-2.5 text-sm text-ink outline-none " +
   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-brand-50 data-[highlighted]:text-brand-700";
 
-/** A tick shown by Radix's ItemIndicator while the item is checked. */
+/**
+ * The tick for a checked item. The indicator is positioned out of the flex row, so the label stays put whether
+ * the item is checked or not, and it is centred on the row's height.
+ */
 const Tick = () => (
-  <span className="absolute left-2 inline-flex w-4 justify-center" aria-hidden>
+  <D.ItemIndicator className="absolute inset-y-0 left-2 flex w-4 items-center justify-center" aria-hidden>
     ✓
-  </span>
+  </D.ItemIndicator>
 );
 
 export function DropdownMenuCheckboxItem({ children, className, ...props }: ComponentProps<typeof D.CheckboxItem>) {
   return (
     <D.CheckboxItem className={cn(ITEM, className)} {...props}>
-      <D.ItemIndicator>
-        <Tick />
-      </D.ItemIndicator>
+      <Tick />
       {children}
     </D.CheckboxItem>
   );
@@ -90,9 +91,7 @@ export const DropdownMenuRadioGroup = D.RadioGroup;
 export function DropdownMenuRadioItem({ children, className, ...props }: ComponentProps<typeof D.RadioItem>) {
   return (
     <D.RadioItem className={cn(ITEM, className)} {...props}>
-      <D.ItemIndicator>
-        <Tick />
-      </D.ItemIndicator>
+      <Tick />
       {children}
     </D.RadioItem>
   );

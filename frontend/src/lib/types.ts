@@ -219,3 +219,45 @@ export interface ChatTurn {
 export interface ChatDetail extends ChatSummary {
   items: ChatTurn[];
 }
+
+export type RunActivityPeriod = "week" | "month" | "year";
+
+export interface RunCounts {
+  runs: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  /** Queued, running or waiting for an answer. */
+  active: number;
+  verified: number;
+  cost_usd: number;
+}
+
+export interface RunActivityBucket extends RunCounts {
+  start: string;
+  label: string;
+  /** The period as UTC instants, for fetching its runs. */
+  from: string;
+  to: string;
+  /** Every run up to the end of this period. */
+  cumulative_runs: number;
+}
+
+/** GET /api/v1/activity: newest period first. */
+export interface RunActivity {
+  period: RunActivityPeriod;
+  tz: string;
+  totals: RunCounts;
+  buckets: RunActivityBucket[];
+}
+
+export interface RunActivityRow {
+  id: string;
+  chat_id: string | null;
+  query: string;
+  status: AnalysisStatus;
+  created_at: string;
+  seconds: number | null;
+  cost_usd: number;
+  verified: boolean | null;
+}

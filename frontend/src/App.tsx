@@ -8,6 +8,7 @@ import { api } from "./lib/api";
 import Home from "./pages/Home";
 // The chat page (answers, charts, preview) loads on demand so the first screen stays small.
 const Chat = lazy(() => import("./pages/Chat"));
+const RunActivity = lazy(() => import("./pages/RunActivity"));
 
 /** Links to a single run (`/analyses/:id`, from before chats existed) open the chat that holds it. */
 function LegacyRun() {
@@ -26,6 +27,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/chats/:id" element={<Chat />} />
+            <Route path="/activity" element={<RunActivity />} />
             <Route path="/analyses/:id" element={<LegacyRun />} />
             <Route path="/history" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />

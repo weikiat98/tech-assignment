@@ -311,6 +311,11 @@ real OpenAI or Gemini runs of follow-ups and the model choice; a real phone. **K
 earlier run has left memory loses the carried datasets; CL11 optional LLM-written titles not built; the activity
 dialog lost the old per-agent filter.
 
+**15 Oct follow-ups (decision 26):** Home wordmark spacing, menu tick alignment, a labelled Settings button, and a
+**Run activity** page (`/activity`, sidebar link) with week/month/year totals, a running count and each period's
+runs. Checks: ruff clean, 164 backend tests, ESLint and typecheck clean, 41 frontend tests; checked in Chrome at
+desktop width (not on a phone).
+
 **Mockup:** [Policy Analytics Chat Layout](https://claude.ai/artifact/CLZY6xXdULSwKDarDeJDGT) (private until shared).
 It has 7 artboards in the signed-off dark theme (decision 23). Artboards 1-4 are clickable.
 

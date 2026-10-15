@@ -132,6 +132,23 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           ))}
         </nav>
       </ScrollArea>
+      <div className="border-t border-line p-2">
+        <NavLink
+          to="/activity"
+          onClick={onNavigate}
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-2.5 rounded-md px-2 py-2 text-sm",
+              isActive ? "bg-brand-50 font-medium text-brand-700" : "text-muted hover:bg-surface-sunken hover:text-ink",
+            )
+          }
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+            <path d="M3 12h4l3 8 4-16 3 8h4" />
+          </svg>
+          Run activity
+        </NavLink>
+      </div>
       <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(o) => !o && setPendingDelete(null)}
