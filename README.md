@@ -87,15 +87,17 @@ counts as not configured.
 
 ## Local development (without Docker)
 
-Prerequisites on macOS: `brew install python@3.12 node@22` (Python 3.11 or newer; Node 22). On macOS
-and Linux use `python3` to create the venv and `.venv/bin/` wherever this guide says `.venv/Scripts/`.
+Prerequisites: [uv](https://docs.astral.sh/uv/) for the backend and Node 22 (22.12 or newer) for the frontend.
+macOS: `brew install uv node@22`. Windows: `winget install astral-sh.uv OpenJS.NodeJS.LTS`. uv reads
+`backend/.python-version` (3.12) and downloads that Python if it isn't installed. Backend dependencies are
+declared in `backend/pyproject.toml` and pinned in `backend/uv.lock`, so every machine, CI and the Docker
+image install the same versions.
 
 ```bash
-# backend: Python 3.11+
+# backend: the commands are the same on macOS, Linux and Windows
 cd backend
-python -m venv .venv                         # macOS/Linux: python3 -m venv .venv
-.venv/Scripts/pip install -e ".[dev]"        # macOS/Linux: .venv/bin/pip
-.venv/Scripts/uvicorn app.main:app --reload --port 8000   # macOS/Linux: .venv/bin/uvicorn ...
+uv sync                                      # creates .venv from uv.lock, dev tools included
+uv run uvicorn app.main:app --reload --port 8000
 
 # frontend: Node 22
 cd frontend
@@ -103,21 +105,26 @@ npm install
 npm run dev                                  # http://localhost:5173, proxies /api and /ws to :8000
 
 # one analysis in the terminal
-cd backend && .venv/Scripts/python -m app.cli "Analyse employment trends in the technology sector from 2020-2024"
+cd backend && uv run python -m app.cli "Analyse employment trends in the technology sector from 2020-2024"
 ```
 
-The `Makefile` wraps these (`make up`, `make dev-api`, `make dev-web`, `make cli Q="..."`, `make test`,
-`make lint`, `make load-stack && make load`, `make aws-*`). It detects the venv layout
-(`Scripts/` on Windows, `bin/` on macOS/Linux), so the same `make` targets work on every platform.
+The `Makefile` wraps these (`make install`, `make up`, `make dev-api`, `make dev-web`, `make cli Q="..."`,
+`make test`, `make lint`, `make load-stack && make load`, `make aws-*`). Backend targets run through
+`uv run`, so the same targets work on every platform.
+
+To add or upgrade a backend dependency: `uv add <package>` (or `uv add --dev <package>`), or
+`uv lock --upgrade-package <package>`, then commit `pyproject.toml` and `uv.lock` together. There is no
+`requirements.txt`: `pyproject.toml` declares the dependencies and `uv.lock` pins them. If a tool needs
+one, generate it with `uv export --no-dev --format requirements-txt`.
 
 ## Running the tests
 
 ```bash
-cd backend                                  # macOS/Linux: use .venv/bin/ instead of .venv/Scripts/
-.venv/Scripts/pytest -m "not contract and not llm" --cov=app      # 141 tests, ~40 s, offline, no keys
-.venv/Scripts/pytest tests/eval -s                                 # prints the hallucination-detection table
-.venv/Scripts/ruff check app tests
-cd ../frontend && npm run lint && npm run typecheck && npm run build
+cd backend
+uv run pytest -m "not contract and not llm" --cov=app      # 164 tests, about a minute, offline, no keys
+uv run pytest tests/eval -s                                 # prints the hallucination-detection table
+uv run ruff check app tests
+cd ../frontend && npm run lint && npm run typecheck && npm test && npm run build   # 41 Vitest tests
 make load-stack && make load                                       # Locust: 50 users for 2 minutes
 ```
 
@@ -135,7 +142,7 @@ API. Results, coverage and the hallucination methodology are in [TESTING.md](TES
 | Forecast technology sector employment for the next two years | Linear projection with a 95% interval, labelled as a projection |
 | How is the job market doing? | Ambiguous: the Coordinator pauses and asks for clarification, then resumes |
 
-**Demo controls** on the home page simulate failures for the next run: SingStat MCP down (falls back to
+**Demo controls** in the Settings dialog (header button) simulate failures for the next run: SingStat MCP down (falls back to
 the REST API), SingStat REST down too (falls back to recorded snapshots), Data.gov.sg down, OpenAI down
 (falls back to Gemini), and *inject a hallucination* (the verifier catches it and the writer rewrites).
 The toggles are disabled automatically on shared deployments (`APP_ENV=aws`).
@@ -170,5 +177,6 @@ backend/   FastAPI app (app/), tests/, recorded snapshots (data/), Dockerfile
   app/web/           search providers, SSRF-safe fetch, grounding, trust tiers
 frontend/  React + TypeScript SPA, nginx config, Dockerfile
 infra/     Terraform for AWS (ECS Fargate, RDS, ALB, CloudFront) and deploy/pause scripts
-.github/   CI (lint, tests, coverage, build, compose smoke test) and the ECS deploy workflow
+.github/   CI (lint, tests, coverage, build, compose smoke test), the ECS deploy workflow and a monthly
+           CVE scan (pip-audit, npm audit, Trivy; see TESTING.md §9)
 ```

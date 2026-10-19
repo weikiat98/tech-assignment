@@ -33,7 +33,8 @@ dependencies = [
     "python-docx>=1.1",
 ]
 
-[project.optional-dependencies]
+# Dev tools are a dependency group (PEP 735): `uv sync` installs them, `uv sync --no-dev` (Docker) skips them.
+[dependency-groups]
 dev = [
     "pytest>=8.2",
     "pytest-asyncio>=0.23",

@@ -22,15 +22,17 @@ jobs:
       DATABASE_URL: sqlite+aiosqlite:///./ci.db
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e ".[dev]"
+          version: "0.12.23"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install from uv.lock (Python 3.12 from backend/.python-version)
+        run: uv sync --locked
       - name: Lint
-        run: ruff check app tests
+        run: uv run --locked ruff check app tests
       - name: Tests with coverage
-        run: pytest -m "not contract and not llm" --cov=app --cov-report=xml --cov-report=html --cov-report=term
+        run: uv run --locked pytest -m "not contract and not llm" --cov=app --cov-report=xml --cov-report=html --cov-report=term
       - uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
@@ -50,6 +52,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
 
   smoke:
