@@ -1,14 +1,10 @@
-# Agentic Policy Data Analytics Platform
+# OWL: Agentic Policy Data Analytics Platform
 
-A policy researcher asks a question in plain English, e.g. *"Analyse employment trends in the technology
-sector from 2020-2024"*. A team of agents plans the work, pulls official data from Singapore government
-sources, checks and cleans it, computes the statistics, and writes a cited report. The researcher watches
-every reasoning step live, and every number in the report is checked against the computation that
+## Summary
+
+OWL is an agentic data analytics platform consisting of a team of agents plans the work, pulls official data from Singapore government sources, checks and cleans it, computes the statistics, and writes a cited report. When a policy researcher asks a question in plain English, e.g. *"Analyse employment trends in the technology sector from 2020-2024"*, the researcher watches every reasoning step live, and every number in the report is checked against the computation that
 produced it before the report is shown.
 
-**Core principle: the LLM reasons, code computes.** Models choose datasets, tools and wording; every
-number comes from a deterministic Python function and is stored as a numbered *Fact*. A verifier rejects
-any claim whose numbers, citations, years or sectors don't match those Facts.
 
 | | |
 |---|---|
@@ -17,8 +13,27 @@ any claim whose numbers, citations, years or sectors don't match those Facts.
 | LLMs | OpenAI and Google Gemini behind one router: per-task model tiers, fallback chain, circuit breaker, per-run budget cap, cost tracking. A scripted MockLLM makes the whole app run with no keys |
 | Stack | FastAPI + LangGraph · PostgreSQL · React 18 + TypeScript (Vite) · Plotly · Gotenberg (PDF) · Docker Compose · GitHub Actions · Terraform for AWS ECS Fargate |
 
-More detail: [ARCHITECTURE.md](ARCHITECTURE.md) · [DATA_SOURCES.md](DATA_SOURCES.md) ·
-[TESTING.md](TESTING.md) · [DEPLOYMENT.md](DEPLOYMENT.md) · [INNOVATION.md](INNOVATION.md)
+For more details, please see the table and relevant documents accordingly.
+
+| Name | Description |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Technical documentaton of architecture designs. |
+| [DATA_SOURCES.md](DATA_SOURCES.md) | Data Source documentation that agents query from. |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | User Guide for deploying app and services for AWS, docker, terraform. |
+| [TESTING.md](TESTING.md) | Scenario testing document for local offline deployment. |
+
+## Table of contents
+
+| Name | Description |
+|---|---|
+| [Architecture at a glance](#architecture-at-a-glance) | Diagram of the agent pipeline, data sources and supporting services |
+| [Quick start (Docker, no keys needed)](#quick-start-docker-no-keys-needed) | Run the full stack with `make up`, using the scripted MockLLM |
+| [Turning on real LLMs, tracing and web search](#turning-on-real-llms-tracing-and-web-search) | Add OpenAI/Gemini, Langfuse and web search keys to `.env` |
+| [Local development (without Docker)](#local-development-without-docker) | Run the backend, frontend and CLI directly on your machine |
+| [Running the tests](#running-the-tests) | Offline test suite, lint, and the opt-in contract and LLM tests |
+| [Sample queries](#sample-queries) | Example questions to try in the app |
+| [Technology choices](#technology-choices) | Why each part of the stack was chosen |
+| [Repository layout](#repository-layout) | What lives in each directory |
 
 ## Architecture at a glance
 

@@ -1,4 +1,7 @@
-"""Load test: API reads under concurrent users plus a trickle of new analyses.
+"""Load test: chat API reads under concurrent users plus a trickle of new chats and follow-ups.
+
+Mirrors what the frontend does (chat list, chat detail, new chat, follow-up); the per-run
+endpoints (/analyses) are kept for event replay and the legacy single-run entry point.
 
     docker compose --profile load up      # UI at http://localhost:8089
     locust -f tests/load/locustfile.py --host http://localhost:8000 --headless -u 50 -r 10 -t 2m
@@ -21,17 +24,34 @@ QUERIES = [
 ]
 
 
+FOLLOW_UPS = ["What about finance?", "Show the same for 2021-2023", "Why did it change?"]
+
+
+def _first_turn_done(chat: dict) -> bool:
+    return chat["status"] == "completed"
+
+
 class Researcher(HttpUser):
     wait_time = between(1, 3)
-    ids: list[str] = []
+    ids: list[str] = []  # analysis ids, for the per-run endpoints
+    chat_ids: list[str] = []  # chats whose newest run has finished (safe to send a follow-up to)
 
     @task(6)
-    def list_history(self):
-        resp = self.client.get("/api/v1/analyses?limit=20", headers=HEADERS, name="GET /analyses")
+    def list_chats(self):
+        resp = self.client.get("/api/v1/chats?limit=20", headers=HEADERS, name="GET /chats")
         if resp.ok:
-            Researcher.ids = [a["id"] for a in resp.json()][:20]
+            Researcher.chat_ids = [c["id"] for c in resp.json() if _first_turn_done(c)][:20]
 
-    @task(4)
+    @task(5)
+    def view_chat(self):
+        if Researcher.chat_ids:
+            resp = self.client.get(f"/api/v1/chats/{random.choice(Researcher.chat_ids)}", headers=HEADERS,
+                                   name="GET /chats/{id}")
+            if resp.ok:
+                runs = [v["id"] for t in resp.json()["items"] for v in t["versions"]]
+                Researcher.ids = (Researcher.ids + runs)[-20:]
+
+    @task(2)
     def view_analysis(self):
         if Researcher.ids:
             self.client.get(f"/api/v1/analyses/{random.choice(Researcher.ids)}", headers=HEADERS,
@@ -48,6 +68,17 @@ class Researcher(HttpUser):
         self.client.get("/readyz", name="GET /readyz")
 
     @task(1)
-    def create_analysis(self):
-        self.client.post("/api/v1/analyses", json={"query": random.choice(QUERIES)}, headers=HEADERS,
-                         name="POST /analyses")
+    def create_chat(self):
+        self.client.post("/api/v1/chats", json={"query": random.choice(QUERIES)}, headers=HEADERS,
+                         name="POST /chats")
+
+    @task(1)
+    def follow_up(self):
+        # 409 means the chat's previous question is still running: expected under load, not a failure.
+        if not Researcher.chat_ids:
+            return
+        with self.client.post(f"/api/v1/chats/{random.choice(Researcher.chat_ids)}/messages",
+                              json={"query": random.choice(FOLLOW_UPS)}, headers=HEADERS,
+                              name="POST /chats/{id}/messages", catch_response=True) as resp:
+            if resp.status_code == 409:
+                resp.success()

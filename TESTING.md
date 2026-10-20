@@ -30,7 +30,7 @@ The design makes most of the system deterministic, so most of it can be tested e
 | Load | Locust, 50 users for 2 minutes against the Docker stack | `tests/load/locustfile.py` | (section 6) |
 | Frontend (Vitest + Testing Library) | Sidebar grouping, rename and confirmed delete; chat bar; answer versions and retry; clarification focus; Radix wrappers (tabs keyboard navigation, dialogs, switch, menus, progress, toasts); plain-language activity sentences on recorded runs; evidence underline; stage progress; replay watermark; Run activity page | `frontend/src/**/*.test.ts(x)` | 41 |
 | Frontend: static | ESLint, `tsc` type check, production build; the full flow checked in a browser | CI `frontend` job | |
-| End to end | Docker Compose stack started in CI, one analysis run to completion | CI `smoke` job | |
+| End to end | Docker Compose stack started in CI; a chat's first question and a follow-up both run to completion through `/chats` | CI `smoke` job | |
 
 ## 2. How to run
 
@@ -59,8 +59,8 @@ excluded from CI.
 1. backend: `uv sync --locked` (fails if `uv.lock` is out of date with `pyproject.toml`), ruff, then pytest
    with coverage (XML and HTML report uploaded as an artefact);
 2. frontend: ESLint, Vitest, type check and build;
-3. smoke: `docker compose up --build` with MockLLM and offline snapshots, then one analysis via the API
-   must reach `completed`;
+3. smoke: `docker compose up --build` with MockLLM and offline snapshots, then a chat is started via
+   `POST /chats`, a follow-up is sent to `/chats/{id}/messages`, and both runs must reach `completed`;
 4. images: on `main`, push the backend and frontend images to GHCR.
 
 A separate monthly workflow scans dependencies and images for known vulnerabilities (section 9).
@@ -163,23 +163,30 @@ every report and action.
 
 ## 6. Performance and load
 
-Run: `make load-stack && make load`. That is the Docker Compose stack on a Windows 11 laptop (Docker
-Desktop), API offline on MockLLM with tracing off, 50 users ramping at 10 per second for 2 minutes, and
-1-3 s think time per user.
+Run: `make load-stack && make load`. That is the Docker Compose stack on a Mac laptop (Docker Desktop,
+re-run 20 Oct), API offline on MockLLM with tracing off, 50 users ramping at 10 per second for 2 minutes,
+and 1-3 s think time per user. The traffic follows the chat app: list chats, open a chat, start a chat and
+send follow-ups, plus the per-run reads (detail, event replay). A follow-up that gets 409 (the chat's
+previous question is still running) is expected under load and counted as a success.
 
 | Endpoint | Requests | Failures | Median | p95 | p99 |
 |---|---|---|---|---|---|
-| GET /analyses (history) | 1,286 | 0 | 10 ms | 63 ms | 110 ms |
-| GET /analyses/{id} | 808 | 0 | 5 ms | 22 ms | 100 ms |
-| GET /analyses/{id}/events | 416 | 0 | 12 ms | 35 ms | 100 ms |
-| GET /readyz | 183 | 0 | 13 ms | 46 ms | 140 ms |
-| POST /analyses (starts a run) | 211 | 0 | 52 ms | 66 ms | 100 ms |
-| **All** | **2,904** | **0** | **10 ms** | **58 ms** | **110 ms** |
+| GET /chats | 956 | 0 | 15 ms | 44 ms | 71 ms |
+| GET /chats/{id} | 807 | 0 | 4 ms | 24 ms | 46 ms |
+| GET /analyses/{id} | 359 | 0 | 4 ms | 16 ms | 35 ms |
+| GET /analyses/{id}/events | 292 | 0 | 8 ms | 30 ms | 52 ms |
+| GET /readyz | 158 | 0 | 9 ms | 32 ms | 43 ms |
+| POST /chats (starts a run) | 177 | 0 | 5 ms | 25 ms | 51 ms |
+| POST /chats/{id}/messages (follow-up) | 161 | 0 | 9 ms | 35 ms | 62 ms |
+| **All** | **2,910** | **0** | **9 ms** | **35 ms** | **57 ms** |
 
-Throughput was 24.4 requests/s, bounded by the users' think time rather than the server. All 211
-analyses started during the test **completed**, while the API stayed at about 210 MiB. Finished runs
-beyond the last 25 are evicted from memory, so it doesn't grow with history. The offline/mock setup
-measures the platform rather than LLM latency, and avoids hammering government APIs.
+Throughput was 24.6 requests/s, bounded by the users' think time rather than the server. `GET /chats` is
+the slowest read because it queries each chat's runs one chat at a time. Not re-measured in this run:
+whether every started run completed, and the API's memory use (7 Oct: all 211 runs completed, about
+210 MiB; finished runs beyond the last 25 are evicted from memory, so it doesn't grow with history). The
+offline/mock setup measures the platform rather than LLM latency, and avoids hammering government APIs.
+The earlier 7 Oct run (2,904 requests, 0 failures, p95 58 ms) used the legacy `/analyses` endpoints and a
+different request mix, so the two are not directly comparable.
 
 ## 7. Coverage
 
@@ -247,5 +254,5 @@ After the fixes, every job of the scan passes locally.
 - Live-provider evaluation (`-m llm`): run the golden queries on OpenAI and Gemini and compare
   intents, plans and verification rates. It needs keys and costs money, so it is not in CI.
 - Contract test against the live SingStat MCP `tools/list` (`-m contract`), intended as a nightly job.
-- Browser E2E (Playwright). The CI smoke job covers the API path end to end, and Vitest covers the
+- Browser E2E (Playwright). The CI smoke job covers the chat API path end to end, and Vitest covers the
   components.

@@ -1,6 +1,6 @@
 # TODO: open items
 
-Snapshot: **Monday 19 Oct 2026** (first written 7 Oct). The deadline no longer applies. LLM providers stay **OpenAI + Google
+Snapshot: LLM providers stay **OpenAI + Google
 Gemini** (decision 14).
 
 **Owner:** 👤 **You** = manual step only you can do · 🤖 **Claude** = I can do it when you say go ·
@@ -25,21 +25,21 @@ Gemini** (decision 14).
   Terraform state empty since 22:37, the CloudFront hostname no longer resolves); this machine's `backend/.venv`
   is already uv-managed; the repo is still private with no collaborators (A5).
 
-## Test run, 19 Oct (automated, offline; Claude ran it)
+## Test run, 19 Oct
 
 Passed: backend `pytest -m "not contract and not llm"` **164 passed, 83% coverage**; `ruff` clean; hallucination
 evaluation **150/150** flagged, 0 of 29 clean claims wrongly flagged; frontend ESLint, `tsc`, Vitest **41 passed (9
 files)** and the production build (7.8 s). TESTING.md's figures already match this run.
 
+**Done 20 Oct:** the load test and the CI smoke job now go through the chat API (`/chats`, follow-ups). Run locally against the offline MockLLM stack: load test 2,910 requests, 0 failures, p95 35 ms, p99 57 ms (TESTING.md §6 updated); the smoke job's script ran end to end (chat plus follow-up, both `completed`). The smoke job itself has not yet run on GitHub (see S4).
+
 **Skipped on purpose (not run in this pass):**
 
 | Item | Why skipped | Owner |
 |---|---|---|
-| Load test (`make load-stack` + `make load`, TESTING.md §6) | Needs the Docker stack and a 2-minute run; the 7 Oct figures (50 users, 2,904 requests, 0 failures, p95 58 ms) predate the chat API, so they are stale until re-run | 🤖 on request |
-| Compose smoke test (CI `smoke` job) | Needs Docker; its curl step still posts to `/api/v1/analyses`, not the primary `/chats` entry point | 🤖 on request |
-| Browser walk-through, exports, keyboard-only demo script (TESTING.md §8, U18) | Manual: someone has to look at it | 👤 |
-| `-m contract` (live SingStat MCP) and `-m llm` (OpenAI / Gemini) tests | Live services; `llm` costs money | 👤 key, then 🤖 |
-| CI on GitHub, `security.yml` | Not run locally; see S4 | 👤 |
+| Browser walk-through and exports (TESTING.md §8) | Manual: someone has to look at it. The keyboard-only demo script moved to Stretch (20 Oct) | 👤 |
+| `-m contract` (live SingStat MCP) tests | Live service. Live-LLM checks (`-m llm`, OpenAI / Gemini) confirmed done by you on 20 Oct | 👤 |
+| CI on GitHub (including the updated `smoke` job), `security.yml` | Not run on GitHub; see S4 | 👤 |
 
 **Outdated entries in this file** (kept as history, superseded):
 
@@ -47,8 +47,7 @@ files)** and the production build (7.8 s). TESTING.md's figures already match th
 - ~~7 Oct block: the load-test result and "Browser walk-through (C4)" were done against the old `/analyses` UI, before the chat layout (decision 24); re-run for the chat app.~~ (history; current figures are above)
 - ~~U14 and U18 progress lines quote "18 Vitest tests" and "26 frontend tests"; the current count is 41.~~ (history; current figures are above)
 - ~~Chat layout status quotes "157 backend tests" and "40 frontend tests"; current is 164 and 41.~~ (history; current figures are above)
-- A2 is struck through but its text still says the Gemini key is a placeholder; no live Gemini result is recorded. Confirm.
-- K1 and K2 are struck through, but CLAUDE.md still lists live Gemini and Langfuse as never verified. Check whether they were really run.
+- ~~A2, K1, K2 (Gemini key, live-LLM run of the sample queries, Langfuse)~~ ✅ 20 Oct: you confirmed all three as done. No result was written into the repo, so the figures are not recorded.
 - ~~D5 (AWS browser check) is struck through, but the AWS section says the browser check and a live OpenAI run are "still outstanding".~~ Moot: AWS was destroyed 15 Oct; do it on the next deploy.
 
 ## 🔐 Security findings from the first scan (19 Oct; TESTING.md §9)
@@ -101,7 +100,7 @@ files)** and the production build (7.8 s). TESTING.md's figures already match th
 | # | Item | Details |
 |---|---|---|
 | A1 | ~~Fix AWS credentials~~ ✅ | Works with the SSO profile `meow98` (AdministratorAccess, `ap-southeast-1`): run `export AWS_PROFILE=meow98` before any `make aws-*`. The **default** profile holds a stale, invalid access key; delete it from `~/.aws/credentials` (or leave it unused) so nothing picks it up by accident. |
-| A2 |~~Google Gemini key~~ 👤 ❓ struck 13 Oct, but the text below still says placeholder and no Gemini result is recorded: confirm | `GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called. With it I can test Gemini directly and the OpenAI → Gemini fallback. |
+| A2 | ~~Google Gemini key~~ ✅ 20 Oct: confirmed done by you | ~~`GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called.~~ |
 | A3 | **Review and edit docs** 👤 | Especially INNOVATION.md (written in your voice as a draft; remove the comment on line 1, still there on 19 Oct). |
 | A4 | ~~Commit and push~~ ✅ | ~~Nothing from 7 Oct is committed yet.~~ Everything up to 15 Oct is merged to `main` (PRs #1-#4, last `f21b971`). The 19 Oct changes on `dev` are not committed yet. |
 | A5 | **Repo visibility** 👤 | Public, or invite the assessors. 19 Oct: still private, and you are the only collaborator. |
@@ -129,7 +128,7 @@ so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-s
 |---|---|---|
 | K1 | ~~Live-LLM run of every sample query (OpenAI, then Gemini): agent quality (H9), out-of-scope handling (M10), verification rates~~ | 🤖 (costs a few US cents per run) |
 | K2 | ~~Langfuse: traces appear, LLM calls nest under the run, scores attach, masking works, "Open trace" link~~ | 🤖 after keys |
-| K3 | ~~DuckDuckGo live search~~ ✅ 13 Oct: live query returned 5 MOM/SingStat hits, all trust tier 1; `safe_fetch` + `extract_content` read a real MOM press release and the SSRF guard blocked `169.254.169.254`. **Tavily still untested** (needs `TAVILY_API_KEY`) | 👤 key, then 🤖 |
+| K3 | ~~DuckDuckGo live search~~ ✅ 13 Oct: live query returned 5 MOM/SingStat hits, all trust tier 1; `safe_fetch` + `extract_content` read a real MOM press release and the SSRF guard blocked `169.254.169.254`. ~~Tavily still untested~~ ✅ 20 Oct: tested by you | 👤 |
 | K4 | ~~Confirm model ids and prices in `llm/costs.py` (M3)~~ | 👤 |
 | M1 | ~~MOM workbook is a disclosed sample built from MOM-sourced figures; optionally point `MOM_EXCEL_URL` at a real MOM download~~ | 👤 decide |
 | M7 | One DB session per event: fine at 50 users; batch if needed | 🤖 |
@@ -169,7 +168,7 @@ walk-through on MockLLM (offline) covered New analysis, the run view (Insights, 
 timeline, live toasts) and History at 1440 px, and all three pages at 390 px. That pass found and fixed three
 phone-width defects: the activity pane widened the page to 920 px (grid item without `min-w-0`), History's
 visually hidden "Actions" label escaped its scroll box and widened the page, and the question column wrapped to
-one word per line. **Still outstanding:** the keyboard-only run of the demo script (now against the chat layout).
+one word per line. The keyboard-only run of the demo script (now against the chat layout) moved to Stretch on 20 Oct.
 
 **Finding (14 Oct), fixed 14 Oct:**
 
@@ -231,7 +230,7 @@ have accessibility gaps:
 | U15 | ~~Approve adopting Radix~~ ✅ 13 Oct: recorded as decision 22 in plan.md §18, §3 and §7 updated. | 👥 |
 | U16 | ~~Measure the bundle after each phase against the decision-20 baseline (app shell 397 kB). 14 Oct: app shell 303.7 kB (98.6 kB gzip), unchanged by U17; fonts load as separate files.~~ ✅ | 🤖 |
 | U17 | ~~✅ **Built 14 Oct** to the signed-off direction (decision 23): dark-only tokens, IBM Plex Sans + Source Serif 4, evidence underline on cited numbers, Plotly dark layout, sentence case, 11 px floor.~~ ✅ | 👥 |
-| U18 | After each phase: `npm run lint`, `typecheck`, `build`, `test`, plus a browser walk-through of the demo script (plan.md §15) with keyboard only. | 🤖 ⏳ only the keyboard-only demo script is left (see U18 progress above) |
+| U18 | After each phase: `npm run lint`, `typecheck`, `build`, `test`, plus a browser walk-through of the demo script (plan.md §15) with keyboard only. | 🤖 ✅ except the keyboard-only demo script, moved to Stretch 20 Oct |
 
 ### U17 visual direction: signed off and built 14 Oct
 
@@ -455,7 +454,7 @@ Each existing analysis is shown as a one-question chat. The follow-up bar stays 
 
 ## 🟢 Stretch
 
-~~L1 frontend unit tests (Vitest)~~ ✅ 41 tests, in CI since 19 Oct · L2 Playwright E2E · L4 cross-provider LLM judge · L5 pgvector RAG ·
+Keyboard-only run of the demo script (plan.md §15, moved from U18 on 20 Oct) · ~~L1 frontend unit tests (Vitest)~~ ✅ 41 tests, in CI since 19 Oct · L2 Playwright E2E · L4 cross-provider LLM judge · L5 pgvector RAG ·
 L6 arq + Redis worker · L7 self-hosted Langfuse compose · L8 nightly live-LLM eval and MCP contract
 test · L9 security scans: ✅ pip-audit, npm audit, Trivy monthly (19 Oct); gitleaks and a Terraform IaC scan still open · L10 Terraform remote state ·
 L11 `/datasets` page and cost dashboard · L12 Alembic · Cloud Run files (documented in DEPLOYMENT.md §5).

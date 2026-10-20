@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-"Agentic Policy Data Analytics Platform" tech assessment (brief: `FSE_techassessment.txt`). **`plan.md` is the source of truth for every design decision** (decisions log in §18) — check it before making design choices and record new decisions there. `todo.md` lists open/unverified items (e.g. no recorded live Gemini/Langfuse result; AWS ECS was destroyed 15 Oct; redeploying takes about 30 min, see todo.md). The original deadline (Sun 4 Oct 2026) no longer applies; a live demo follows (script in plan.md §15). Git remote: `github.com/weikiat98/tech-assignment` (`main`).
+"OWL: Agentic Policy Data Analytics Platform" tech assessment (brief: `FSE_techassessment.txt`). **`plan.md` is the source of truth for every design decision** (decisions log in §18) — check it before making design choices and record new decisions there. `todo.md` lists open/unverified items (e.g. no recorded live Gemini/Langfuse result; AWS ECS was destroyed 15 Oct; redeploying takes about 30 min, see todo.md). The original deadline (Sun 4 Oct 2026) no longer applies; a live demo follows (script in plan.md §15). Git remote: `github.com/weikiat98/tech-assignment` (`main`).
 
 Placeholder convention: every API key/env var in `.env.example` is `REPLACE_ME...`; the app treats any such value as "not configured" and falls back (MockLLM, keyless DuckDuckGo search, no Langfuse tracing) so it still runs end to end. Note the Windows system env may already have `OPENAI_API_KEY` set, which the app picks up (real spend) — set `LLM_MODE=mock` in `.env` to avoid that.
 
