@@ -1,5 +1,9 @@
 # Deployment
 
+> **About this file:** how to run the platform locally with Docker Compose and deploy it to AWS ECS Fargate
+> (Terraform, AWS SSO setup, secrets, deploy script, GitHub Actions pipeline, pause and destroy), plus the Cloud Run
+> alternative and scale-out notes. The pipeline overview is in [ARCHITECTURE.md §10](ARCHITECTURE.md).
+
 | Environment | Where | LLM | Data | Tracing |
 |---|---|---|---|---|
 | local | `docker compose up` | `auto`: live when keys are set, else MockLLM | live sources, snapshot fallback | Langfuse if keys are set |
@@ -110,7 +114,63 @@ winget install Git.Git Amazon.AWSCLI Hashicorp.Terraform ezwinports.make jqlang.
 hashicorp/tap/terraform`.) Apple Silicon Macs are fine: `deploy.sh` builds `linux/amd64` images, which is what
 Fargate runs here.
 
-Then verify (Git Bash on Windows, Terminal on macOS):
+**Set up AWS SSO (once per machine)**
+
+You need the **SSO start URL** and the **SSO region** of your IAM Identity Center. Find them in the AWS
+console: IAM Identity Center → Settings summary → *AWS access portal URL* (looks like
+`https://d-xxxxxxxxxx.awsapps.com/start`) and the region shown at the top of that page. The Identity
+Center region is where it was enabled; it can differ from the app region `ap-southeast-1`. Your
+Identity Center user also needs an `AdministratorAccess` permission set on the account.
+
+The commands and prompts are identical on both systems. Run them in **Git Bash** (Windows; PowerShell
+also works for this part) or **Terminal** (macOS). The AWS CLI must be v2 (`aws --version`).
+
+```bash
+aws configure sso
+```
+
+The terminal asks these questions in order. Type the value shown after the arrow; "Enter" means accept
+the default in brackets.
+
+| # | What the terminal prints | What to enter |
+|---|---|---|
+| 1 | `SSO session name (Recommended):` | A label for the login session, e.g. `owl-sso` |
+| 2 | `SSO start URL [None]:` | Your access portal URL, e.g. `https://d-xxxxxxxxxx.awsapps.com/start` |
+| 3 | `SSO region [None]:` | The Identity Center region, e.g. `ap-southeast-1` |
+| 4 | `SSO registration scopes [sso:account:access]:` | Enter (keep the default) |
+| 5 | *(browser)* `Attempting to automatically open the SSO authorization page in your default browser.` | A browser tab opens. Sign in with your Identity Center user, check the code shown matches the one in the terminal (like `ABCD-EFGH`), click **Confirm and continue**, then **Allow access**. Return to the terminal. |
+| 6 | `The only AWS account available to you is: 123456789012` (or an arrow-key list if you have several) | Nothing for one account; otherwise pick the account with the arrow keys and press Enter |
+| 7 | `The only role available to you is: AdministratorAccess` (or a list) | Nothing for one role; otherwise pick `AdministratorAccess` |
+| 8 | `CLI default client Region [None]:` | `ap-southeast-1` (lower case; this is the region the app deploys to) |
+| 9 | `CLI default output format [None]:` | `json` |
+| 10 | `Profile name [AdministratorAccess-123456789012]:` | A short name you will reuse, e.g. `meow98`. This is your `<your-sso-profile>` everywhere below. |
+
+It ends with `To use this profile, specify the profile name using --profile, as shown: aws s3 ls --profile <name>`.
+Nothing is deployed or billed by this step; it only writes `~/.aws/config` (`%UserProfile%\.aws\config` on
+Windows).
+
+If no browser opens (remote shell, no default browser), copy the URL and code the terminal prints, open
+the URL on any device, and type the code there. Or start with `aws sso login --use-device-code` later.
+
+Then log in, select the profile and check who you are:
+
+```bash
+aws sso login --profile <your-sso-profile>      # opens the browser again; prints "Successfully logged into Start URL: ..."
+export AWS_PROFILE=<your-sso-profile>           # PowerShell: $env:AWS_PROFILE = "<your-sso-profile>"
+aws sts get-caller-identity                     # Account, and an Arn containing AWSReservedSSO_AdministratorAccess
+```
+
+| When | What to do |
+|---|---|
+| Every new terminal window | Run the `export AWS_PROFILE=...` line again (it only lives in that window) |
+| Session expired (after a few hours; errors say `Token has expired` or `The SSO session associated with this profile has expired`) | `aws sso login --profile <your-sso-profile>`, no need to repeat `aws configure sso` |
+| Check what profiles exist | `aws configure list-profiles` |
+| Log out | `aws sso logout` |
+
+Do not run `aws configure` (without `sso`) for this project: it asks for a long-lived access key, which is
+what the SSO profile replaces.
+
+Finally verify (Git Bash on Windows, Terminal on macOS):
 
 ```bash
 aws --version                  # AWS CLI v2
@@ -259,7 +319,8 @@ Logs (same `AWS_PROFILE`): `aws logs tail /ecs/policy-analytics/api --follow` (a
 ### Step 7: deploy through the pipeline (GitHub Actions + OIDC)
 
 `.github/workflows/deploy-ecs.yml` runs the same script in CI, authenticating with GitHub OIDC, so no
-AWS keys are stored in GitHub. In the repository settings:
+AWS keys are stored in GitHub (how it relates to the CI and security workflows: [ARCHITECTURE.md §10](ARCHITECTURE.md)).
+In the repository settings:
 
 1. **Environments → New environment `aws`.** Under *Deployment branches and tags*, allow `main` and
    tags matching `v*`. The IAM role trusts exactly this environment

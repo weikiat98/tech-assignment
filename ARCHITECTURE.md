@@ -1,5 +1,9 @@
 # Architecture
 
+> **About this file:** how the platform is built: components, agents and the LangGraph pipeline, data flow,
+> LLM routing, hallucination controls, failure handling, database schema, design trade-offs and the
+> CI/CD pipeline. For running and deploying it see [DEPLOYMENT.md](DEPLOYMENT.md); for tests see [TESTING.md](TESTING.md).
+
 ## 1. Components
 
 ```mermaid
@@ -316,3 +320,55 @@ in place.
 - Security: shared access token on `/api` and `/ws` for public deployments, rate limiting, chaos
   endpoint disabled outside local/test, SSRF protection including the cloud metadata IPs, secrets from
   AWS Secrets Manager, and GitHub OIDC instead of stored AWS keys. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## 10. CI/CD pipeline
+
+Three GitHub Actions workflows live in `.github/workflows/`. They are independent: none calls another.
+
+```mermaid
+flowchart LR
+    subgraph Triggers
+        T1["push to main · pull request"]
+        T2["tag v* · manual run"]
+        T3["1st of the month, 02:00 UTC · manual run"]
+    end
+    T1 --> CI
+    T2 --> DEP
+    T3 --> SEC
+    subgraph CI["ci.yml: CI"]
+        direction TB
+        B["backend<br/>uv sync --locked · ruff · pytest + coverage"]
+        F["frontend<br/>eslint · vitest · build"]
+        S["smoke<br/>compose up, chat + follow-up must complete"]
+        I["images (main only)<br/>push to GHCR"]
+        B & F --> S --> I
+    end
+    subgraph DEP["deploy-ecs.yml: Deploy to AWS ECS"]
+        D["OIDC role → deploy.sh<br/>build · push to ECR · migrate · roll services · /readyz"]
+    end
+    subgraph SEC["security.yml: Security scan"]
+        direction TB
+        P["pip-audit<br/>uv.lock"]
+        N["npm audit<br/>package-lock.json"]
+        TR["Trivy<br/>backend + frontend images"]
+    end
+    I --> GHCR[("GHCR images")]
+    D --> ECS[("AWS ECS + ECR")]
+```
+
+| Workflow | Trigger | What it does | Output | Details |
+|---|---|---|---|---|
+| `ci.yml` | every push to `main`, every pull request | Lint and test the backend and frontend, smoke-test the full compose stack, then (on `main` only) push images | Coverage report artefact; GHCR images tagged with the commit SHA and `latest` | [TESTING.md §2](TESTING.md) |
+| `deploy-ecs.yml` | tag `v*` or manual run | Assume the AWS role through GitHub OIDC and run `infra/scripts/deploy.sh` | New task-definition revisions running on ECS; the script ends with a `/readyz` smoke test | [DEPLOYMENT.md §3, Step 7](DEPLOYMENT.md) |
+| `security.yml` | monthly cron (default branch only), manual run | CVE scan of Python and npm lockfiles and both built images; fails on findings | Run summary with the findings | [TESTING.md §9](TESTING.md) |
+
+Properties worth knowing:
+
+- **Deploys are deliberate.** Merging to `main` never deploys; only a version tag or a manual run does, and
+  runs queue one at a time (`concurrency: deploy-ecs`, no cancelling a deploy half-way).
+- **No stored cloud credentials.** The deploy job gets short-lived AWS credentials from GitHub OIDC; the IAM
+  role trusts only the `aws` environment of this repository.
+- **CI is offline and free.** It runs on MockLLM with recorded snapshots (`OFFLINE_MODE=true`), so it needs
+  no API keys and gives the same result every run. Live-provider and contract tests are opt-in markers.
+- **Two image builds.** CI pushes images to GHCR; the deploy script builds its own and pushes them to ECR,
+  so a deploy does not depend on the CI images.

@@ -1,5 +1,8 @@
 # TODO: open items
 
+> **About this file:** the tracker of open and unverified items (who owns each, what is done and verified),
+> including AWS state and demo preparation.
+
 Snapshot: LLM providers stay **OpenAI + Google
 Gemini** (decision 14).
 
