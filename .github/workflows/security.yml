@@ -1,0 +1,85 @@
+name: Security scan
+
+# Monthly CVE scan of everything the app ships, and on demand (Actions → Security scan → Run workflow).
+#   python: pip-audit (PyPI advisory DB + OSV) over the runtime packages pinned in backend/uv.lock
+#   node:   npm audit over frontend/package-lock.json, dev tooling included (it runs in CI and on laptops)
+#   images: Trivy over the built backend and frontend images (OS packages and installed Python packages)
+# A job fails when it finds something (pip-audit: any known vulnerability; npm audit and Trivy: high or
+# critical, Trivy only where a fix exists). Findings go to the run summary. GitHub emails a failed
+# scheduled run to whoever last changed the cron line. Schedules only run from the default branch (main).
+on:
+  schedule:
+    - cron: "0 2 1 * *" # 02:00 UTC on the 1st of each month (10:00 in Singapore)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.0
+        with:
+          version: "0.12.23"
+      - name: pip-audit on the locked runtime dependencies
+        run: |
+          uv export --locked --no-dev --no-emit-project --format requirements-txt -o "$RUNNER_TEMP/requirements.txt"
+          set +e
+          uvx pip-audit@2.10.1 -r "$RUNNER_TEMP/requirements.txt" --disable-pip \
+            --format markdown --output "$RUNNER_TEMP/pip-audit.md"
+          status=$?
+          set -e
+          {
+            echo "## Python dependencies (pip-audit)"
+            if [ -s "$RUNNER_TEMP/pip-audit.md" ]; then cat "$RUNNER_TEMP/pip-audit.md"; else echo "No known vulnerabilities found."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+  node:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (fails on high or critical)
+        run: |
+          set +e
+          npm audit --audit-level=high > "$RUNNER_TEMP/npm-audit.txt"
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/npm-audit.txt"
+          { echo "## Frontend dependencies (npm audit)"; echo '```'; cat "$RUNNER_TEMP/npm-audit.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the ${{ matrix.service }} image
+        run: docker build -t policy-analytics-${{ matrix.service }}:scan ./${{ matrix.service }}
+      # The pinned Trivy image runs directly instead of aquasecurity/trivy-action, whose release tags were
+      # all re-published on 20 Mar 2026.
+      - name: Trivy (fails on fixable high or critical)
+        run: |
+          set +e
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.75.0 image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed \
+            --exit-code 1 --no-progress policy-analytics-${{ matrix.service }}:scan > "$RUNNER_TEMP/trivy.txt"
+          status=$?
+          set -e
+          cat "$RUNNER_TEMP/trivy.txt"
+          { echo "## ${{ matrix.service }} image (Trivy)"; echo '```'; cat "$RUNNER_TEMP/trivy.txt"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit $status

@@ -103,7 +103,7 @@ Each line maps to a section of this plan. `[B]` marks a bonus item.
 |---|---|---|
 | Backend API | **FastAPI** (Python 3.12), Pydantic v2 | Async-native, built-in WebSocket support, OpenAPI docs for free, typed schemas shared with the LLM's structured output |
 | Agent framework | **LangGraph** | Explicit state graph (easy to explain in the demo), conditional edges for re-planning, built-in `interrupt` for clarification, checkpointing for resume and retry, event streaming |
-| LLM clients | LangChain chat models (`langchain-openai`, `langchain-google-genai`, optional `langchain-aws`), wrapped in our own **`LLMRouter`** | We control the fallback order, circuit breaking, cost logging and the deterministic mock for tests |
+| LLM clients | LangChain chat models (`langchain-openai`, `langchain-google-genai`), wrapped in our own **`LLMRouter`** | We control the fallback order, circuit breaking, cost logging and the deterministic mock for tests |
 | Task processing | **In-process asyncio task runner** (`asyncio.create_task` + run registry + in-memory event bus → WebSocket), with run state persisted to Postgres. *Stretch:* arq + Redis worker | Meets "asynchronous task processing" with the fewest moving parts for the Sunday deadline. The runner sits behind a `TaskRunner` interface, so swapping in arq + Redis (separate worker process, pub/sub to the WebSocket) is a contained change and is documented as the scale-out path |
 | Database | **PostgreSQL 16** (pgvector image, so RAG can be added as a stretch) | Relational storage for runs, events, datasets and results. Using the pgvector image now means RAG needs no new service later |
 | ORM / migrations | SQLAlchemy 2.0 (async); schema via `create_all` + seed (`python -m app.db.init`), Alembic once the schema must evolve in place | Standard and well understood (decision 11) |
@@ -113,11 +113,13 @@ Each line maps to a section of this plan. `[B]` marks a bonus item.
 | MCP client | Official **`mcp`** Python SDK (`streamable_http_client` + `ClientSession`) | Connects to the **SingStat MCP**; discovery and metadata tools are exposed to the ReAct agent, data fetches are wrapped by the adapter (decision 11) |
 | Web search | **Tavily** (search + extract APIs built for agents; free tier 1,000 credits/month) behind a `WebSearchProvider` interface; **DuckDuckGo** (`ddgs`, no key) as keyless fallback; `mock` provider for tests | Same pattern as the LLM router: provider-neutral, fallback, works without keys |
 | Web extraction | httpx + **trafilatura** (main text), `pandas.read_html` (HTML tables), existing CSV/Excel parsers for linked files; *stretch:* pdfplumber for PDF tables | Turns pages into the canonical format, then the same quality pipeline runs on them |
-| Frontend | **React 18 + TypeScript (Vite)**, React Router, Tailwind components on **Radix Primitives** (decision 22), TanStack Query | The brief allows "Next.js/React" but names TypeScript explicitly, so TypeScript stays. A Vite single-page app is simpler than Next.js here: no SSR is needed, there are fewer framework rules, builds are faster, and it serves as static files from nginx. shadcn gives polished UI quickly |
+| Frontend | **React 18 + TypeScript (Vite)**, React Router, Tailwind components on **Radix Primitives** (decision 22), TanStack Query | The brief allows "Next.js/React" but names TypeScript explicitly, so TypeScript stays. A Vite single-page app is simpler than Next.js here: no SSR is needed, there are fewer framework rules, builds are faster, and it serves as static files from nginx. Radix gives accessible behaviour; the styling is our own |
 | Charts | **Plotly** (backend emits figure JSON → `react-plotly.js`) | Analytics agent produces chart specs as data, so charts are testable and exportable and the frontend stays generic |
 | Export | Markdown/JSON/CSV natively; PDF via **Gotenberg** (separate container: backend renders report HTML, POSTs it to Gotenberg's Chromium endpoint, gets a PDF back) | Keeps the backend image free of PDF system libraries. Chromium runs JavaScript, so the **interactive Plotly charts render in the PDF as-is**, whereas WeasyPrint has no JS and would need a separate static-image step (kaleido). Cost: one more ~1 GB container, which is acceptable in Compose |
 | Testing | pytest, pytest-asyncio, respx, hypothesis, pytest-cov; Vitest + React Testing Library; **Locust**; *stretch:* Playwright | Covers unit, property, integration and load testing; browser E2E only if time allows |
-| Quality | ruff, mypy, eslint, tsc, pre-commit | Code quality is part of the score |
+| Quality | ruff, eslint, tsc (in CI); mypy configured but not run in CI; no pre-commit hooks | Code quality is part of the score |
+| Python packaging | **uv**: dependencies in `pyproject.toml` (dev tools in a PEP 735 `dev` group), pinned in a committed `uv.lock`; Python 3.12 from `.python-version` (decision 27) | One lockfile for laptops, CI and the Docker image, so every build installs the same versions and the CVE scan checks exactly what ships |
+| Security scanning | Monthly GitHub Actions workflow: pip-audit on `uv.lock`, npm audit, Trivy on both images (decision 28) | Catches newly published CVEs in code that hasn't changed |
 | LLM / agent tracing | **Langfuse** (optional; Langfuse Cloud for dev, self-hostable) | Open-source and self-hostable, which suits government data residency. Native LangGraph callback, trace scores for verifier results, and cost/latency per call. See §4.3a |
 | CI/CD | GitHub Actions → Amazon ECR → **AWS ECS (Fargate)**; Google Cloud Run documented as the alternative | Repo is on GitHub. Fargate runs the same containers as Compose with no servers to manage. Cloud Run is the GCP equivalent and fits the multi-cloud theme. See §11 |
 
@@ -412,7 +414,7 @@ The app is a chat, laid out like a search engine. Mockup: todo.md "Chat layout" 
    - **One action row:** the **Preview** split button (opens the panel on *Report*; ▾ picks Charts, Data & quality, Report or Plan), Copy, and the Verified stamp. Then up to three follow-up suggestions.
    - A **clarification** is an assistant message with suggestion chips, answered from the chat bar.
    The chat bar stays at the bottom for **follow-up questions**; a follow-up reuses the data the chat already collected and fetches only what is new. A Stop button shows while a run is going.
-   Until the `chats` model exists (todo CL9), `/analyses/:id` is shown as a one-question chat with the follow-up bar disabled.
+   Older `/analyses/:id` links redirect to that run's chat (every run belongs to a chat since CL9).
 3. **Preview panel:** tabs Report, Charts (interactive Plotly), Data & quality (dataset cards and quality report) and Plan, plus Export and Close. Each answer has its own preview.
 4. **Run details** (low priority): a plain summary per run for non-technical users (outcome, time, model actually used, cost, sources as Live / Saved copy / Failed, checks, "Worth knowing"), built from our own events and `llm_calls`. The Langfuse trace link stays, labelled for engineers.
    **`/activity` Run activity** (decision 26): every run across all chats, grouped by **Week / Month / Year** in the viewer's time zone. All-time totals (runs, completed, verified, failed, AI cost), then one row per period (newest first) with runs, completed, verified, failed, cost and a running total. Selecting a period lists its runs; each opens the Run details dialog.
@@ -423,12 +425,12 @@ The app is a chat, laid out like a search engine. Mockup: todo.md "Chat layout" 
 ### Technical notes
 - WebSocket hook with auto-reconnect. On reconnect it fetches missed events through `GET /events?after=seq`, so no events are lost.
 - After replaying stored events, the WebSocket sends `{"type": "replay_done", "last_seq": n}` (no `seq`, so older clients ignore it). The UI treats events up to the first `last_seq` as history and raises toasts only for later ones, without comparing browser and server clocks.
-- Report text is **streamed** token-by-token from the Writer (`[B]` streaming).
+- The Writer's draft streams as `report_chunk` events (title, summary, then one per finding) for each attempt; it is not streamed token by token.
 - Responsive layout: on a phone the sidebar becomes a drawer, the Preview panel a full-screen sheet, and the chat bar is fixed to the bottom. Accessible, with keyboard navigation and ARIA labels.
 - **UI components (decision 22):** interactive widgets (tabs, tooltips, switches, menus, dialogs, toasts, collapsibles, progress, scroll areas) use **Radix Primitives** (`radix-ui` package, root entry) for keyboard, focus and ARIA behaviour, styled by our own thin Tailwind 4 wrappers in `src/components/ui/` via Radix data attributes and CSS variables. The same pass refreshes the visual design (typography, palette, density). Work items U0-U18 in todo.md.
-- API types are generated from FastAPI's OpenAPI spec (`openapi-typescript`), so frontend and backend types stay in sync.
+- API types are hand-written in `lib/types.ts`. Generating them from FastAPI's OpenAPI spec (`openapi-typescript`) is a stretch item.
 - In development, the Vite dev server proxies `/api` and `/ws` to FastAPI. In Docker, nginx serves the built static files and does the same proxying, so the browser only ever talks to one origin and no CORS setup is needed.
-- **Deadline scope:** `/datasets`, history search/filter and mobile polish are stretch items. Query page, run view, history list and export are the MVP.
+- **Still stretch:** `/datasets`. Chat search, pinning and the phone layout are built.
 
 ---
 
@@ -437,47 +439,56 @@ The app is a chat, laid out like a search engine. Mockup: todo.md "Chat layout" 
 ### REST + WS endpoints
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/v1/analyses` | Create a run (query, options) → 202 + `id`; hands it to the `TaskRunner` |
-| GET | `/api/v1/analyses` | List/search history (paginated) |
+| POST | `/api/v1/chats` | Start a chat with its first question (query, options) → 202; turn 1 goes to the `TaskRunner` |
+| GET | `/api/v1/chats?q=` | List chats, pinned first; `q` searches titles and questions |
+| GET | `/api/v1/chats/{id}` | A chat with its turns and every version of each turn |
+| PATCH | `/api/v1/chats/{id}` | Rename or pin/unpin |
+| DELETE | `/api/v1/chats/{id}` | Delete a chat and its runs |
+| POST | `/api/v1/chats/{id}/messages` | Follow-up question → a new turn that carries the earlier turns' context |
+| POST | `/api/v1/chats/{id}/turns/{turn}/retry` | Ask a turn again → a new version of that turn |
+| POST | `/api/v1/analyses` | Single run (query, options) → 202 + `id`; creates a one-question chat |
+| GET | `/api/v1/analyses` | List runs (paginated) |
 | GET | `/api/v1/analyses/{id}` | Full result: intent, plan, status, insights, facts, charts, report, quality, cost |
 | GET | `/api/v1/analyses/{id}/events?after=` | Event replay |
+| GET | `/api/v1/analyses/{id}/summary` | Plain run summary for the Run details dialog |
 | POST | `/api/v1/analyses/{id}/clarify` | Answer a clarification and resume the graph |
 | POST | `/api/v1/analyses/{id}/cancel` | Cancel |
 | POST | `/api/v1/analyses/{id}/rerun` | Re-run, optionally with a different provider |
-| GET | `/api/v1/analyses/{id}/export?format=pdf\|md\|json\|csv` | Export |
+| DELETE | `/api/v1/analyses/{id}` | Delete a run (and its chat, if it was the last run) |
+| GET | `/api/v1/analyses/{id}/export?format=md\|pdf\|docx\|html\|json\|csv` | Export |
 | GET | `/api/v1/activity?period=week\|month\|year&tz=` | Run totals per period with a running count (decision 26) |
 | GET | `/api/v1/activity/runs?start=&end=` | The runs created in one period |
-| GET | `/api/v1/datasets`, `/api/v1/datasets/{id}` | Catalogue, snapshots and quality |
+| GET | `/api/v1/config` | Runtime settings for the UI (model chain, web search, offline mode, tracing, version) |
 | GET | `/api/v1/sources/health` | Live source reachability |
 | GET | `/api/v1/llm/providers` | Provider status, circuit-breaker state and cumulative cost |
+| GET/PUT | `/api/v1/admin/chaos` | Demo failure toggles (local/dev/test/ci only, decision 19) |
+| GET | `/api/v1/datasets`, `/api/v1/datasets/{id}` | *Stretch, not built:* catalogue, snapshots and quality |
 | WS | `/ws/analyses/{id}` | Live `AgentEvent` + status + token stream |
 | GET | `/healthz`, `/readyz` | Liveness and readiness (DB, Gotenberg) |
 
 Errors use a consistent RFC 7807 problem+json body. Requests are validated by Pydantic. Rate limiting is per IP (slowapi). There is a request ID for correlation in logs.
 
-### Database schema (PostgreSQL)
+### Database schema (PostgreSQL, or SQLite for local dev)
+As built (`db/models.py`, created by `create_all` in `python -m app.db.init`; diagram in ARCHITECTURE.md §7):
 ```
-analyses(id PK, query, status[queued|running|awaiting_input|completed|partial|failed|cancelled],
-         intent JSONB, plan JSONB, options JSONB, error TEXT,
+chats(id PK, title, pinned BOOL, created_at, updated_at)
+analyses(id PK, chat_id, turn INT, version INT, query,
+         status[queued|running|awaiting_input|completed|partial|failed|cancelled],
+         options JSON, intent JSON, plan JSON, result JSON, error TEXT,
          total_tokens INT, total_cost_usd NUMERIC, created_at, started_at, finished_at)
-agent_events(id PK, analysis_id FK, seq INT, agent, type[thought|action|observation|handoff|error|fallback|status],
-         content JSONB, tokens INT, cost_usd NUMERIC, created_at)          -- idx(analysis_id, seq)
-datasets(id PK, source_id, external_id, title, description, columns JSONB, url, frequency, unit,
-         embedding VECTOR(1536))
-dataset_snapshots(id PK, dataset_id FK, retrieved_at, raw_hash, raw_path/bytea, row_count, is_fallback BOOL)
-quality_reports(id PK, snapshot_id FK, analysis_id FK, score NUMERIC, issues JSONB, actions JSONB)
-observations(snapshot_id FK, series, sector, period DATE, value NUMERIC, unit)   -- canonical data
-facts(id PK, analysis_id FK, key TEXT, label, value NUMERIC, unit, method, params JSONB,
-      source_snapshot_ids INT[])
-charts(id PK, analysis_id FK, title, spec JSONB, fact_ids INT[])
-reports(id PK, analysis_id FK, markdown TEXT, structured JSONB, verification JSONB,
-        faithfulness_score NUMERIC, embedding VECTOR(1536))
-insights(id PK, report_id FK, text, fact_ids INT[], source_ids TEXT[], verified BOOL, confidence)
-llm_calls(id PK, analysis_id FK, agent, provider, model, prompt_tokens, completion_tokens,
-          latency_ms, cost_usd, success BOOL, fallback_from TEXT, created_at)
-internal.* (mock internal tables)
+agent_events(id PK, analysis_id FK, seq INT, agent, type, content JSON, tokens INT, cost_usd NUMERIC, created_at)
+facts(id PK, analysis_id FK, fact_id, key, value, display, method, params JSON, source_keys JSON)
+charts(id PK, analysis_id FK, chart_id, spec JSON, fact_ids JSON)
+quality_reports(id PK, analysis_id FK, dataset_key, score, issues JSON, actions JSON)
+reports(id PK, analysis_id FK, markdown TEXT, structured JSON, verification JSON)
+llm_calls(id PK, analysis_id FK, provider, model, prompt_tokens, completion_tokens, latency_ms, cost_usd,
+          success BOOL, fallback_from)
+internal_programme_enrolments, internal_grant_disbursements   -- mock internal systems
 ```
-Plus LangGraph checkpoint tables, created by the checkpointer.
+All timestamps use the `UTCDateTime` type (timezone-aware on SQLite too). Datasets live in the per-run
+`RunContext` and the snapshot store, not in tables. Not built from the original design: the `datasets`,
+`dataset_snapshots`, `observations` and `insights` tables, pgvector embeddings, and LangGraph checkpoint
+tables (checkpoints use the in-memory `MemorySaver`).
 
 ---
 
@@ -542,21 +553,21 @@ Several layers, with each insight tagged by result:
 ## 11. DevOps & deployment
 
 - **Dockerfiles:** multi-stage, non-root, slim images.
-  - `backend/Dockerfile` uses uv for dependency install.
+  - `backend/Dockerfile` copies a pinned uv binary and runs `uv sync --locked --no-dev --no-install-project` into `/opt/venv`, so the image gets exactly the runtime versions in `uv.lock` (decision 27).
   - `frontend/Dockerfile`: stage 1 runs `vite build`; stage 2 is `nginx:alpine` serving `dist/` and proxying `/api` and `/ws` to the backend.
-- **`docker-compose.yml`:** `postgres` (pgvector image), `api`, `frontend`, `gotenberg` (`gotenberg/gotenberg:8`, internal network only, not exposed to the host), and a one-shot `migrate` (Alembic + seed: catalogue, internal mock data, snapshots). Health checks and `depends_on: condition: service_healthy`. *Stretch:* `redis` + `worker` if arq is adopted.
+- **`docker-compose.yml`:** `postgres` (pgvector image), `api`, `frontend`, `gotenberg` (`gotenberg/gotenberg:8`, internal network only, not exposed to the host), and a one-shot `migrate` (`python -m app.db.init`: `create_all` + internal mock data; snapshots and the Data.gov.sg catalogue ship in the image). Health checks and `depends_on: condition: service_healthy`. *Stretch:* `redis` + `worker` if arq is adopted.
 - **Profiles:** `docker compose up` runs the full app; `--profile load` adds Locust.
 - **Environment & secrets:**
   - `pydantic-settings` loads `.env` (committed `.env.example` with `REPLACE_ME` placeholders, `.env` git-ignored).
   - `LLM_MODE=auto|mock|live`: `auto` (default) uses real providers whose keys are set and falls back to `MockLLM` when none are, so reviewers can run without keys.
   - Secrets come only from env or Docker secrets, never logged, and are redacted in event content.
   - In CI they come from GitHub Secrets. In the cloud they come from AWS Secrets Manager (ECS) or GCP Secret Manager (Cloud Run). See §11.1.
-- **CI** (`.github/workflows/ci.yml`, on PR + push):
-  1. Backend: ruff, mypy, pytest (unit + integration with service containers), coverage upload.
-  2. Frontend: eslint, tsc, vitest, build.
-  3. Smoke test: `docker compose up` (mock LLM) → hit `/readyz` → create a run → assert it completes. *Stretch:* Playwright.
-  4. Docker build; on `main`, push images tagged with the git SHA to **Amazon ECR** (and to GHCR, so reviewers can pull without AWS access).
-  5. *Stretch:* security scans (`pip-audit`, `npm audit`, Trivy, gitleaks).
+- **CI** (`.github/workflows/ci.yml`, on PR + push to `main`), as built:
+  1. Backend: `uv sync --locked`, ruff, pytest on SQLite with MockLLM and snapshots, coverage artefact. (mypy is configured but not run.)
+  2. Frontend: eslint, vitest, build (`tsc -b` + Vite).
+  3. Smoke test: `docker compose up` (mock LLM, offline) → hit `/readyz` → create a run → assert it completes. *Stretch:* Playwright.
+  4. On `main`, push images tagged with the git SHA to GHCR. ECR images are pushed by the deploy workflow.
+  5. **Security** (`security.yml`, monthly + on demand, decision 28): pip-audit on `uv.lock`, npm audit, Trivy on both images. *Stretch:* gitleaks, Trivy IaC scan of Terraform.
 - **CD:** see §11.1 (ECS, primary) and §11.2 (Cloud Run, alternative). Live LLM evals run on a nightly workflow (stretch).
 - **Observability:**
   - Structured JSON logs (structlog) with `run_id` and `request_id`, shipped to CloudWatch Logs on ECS and Cloud Logging on Cloud Run.
@@ -600,29 +611,25 @@ Several layers, with each insight tagged by result:
 - **Gotenberg runs as a sidecar** in the api task definition and is reached at `localhost:3000`. That avoids service discovery and keeps it private.
 - **Database:** RDS for PostgreSQL 16 (`db.t4g.micro`, 20 GB, single-AZ) in private subnets, with the security group only allowing the api tasks. **`manage_master_user_password = true`**: RDS generates the password and keeps it in Secrets Manager, so it never appears in Terraform state or in the repo.
 - **Langfuse on ECS:** a self-hosted Langfuse on your laptop can't be reached from AWS. In ECS, either use Langfuse Cloud keys or leave tracing off. This depends on the Langfuse choice that is still open (§18).
-- **Migrations:** each deploy runs `alembic upgrade head` + seed as a **one-off ECS task** (`aws ecs run-task`, same image, different command) before the service update.
+- **Migrations:** each deploy runs `python -m app.db.init` (`create_all` + seed) as a **one-off ECS task** (`aws ecs run-task`, same image, different command) before the service update.
 - **Secrets:**
   - LLM keys, Langfuse keys and the DB URL live in **AWS Secrets Manager**, referenced through the task definition's `secrets` block, so they are never in the image or in plain env vars.
   - GitHub Actions authenticates to AWS with **OIDC** (`aws-actions/configure-aws-credentials` assuming an IAM role), so no long-lived AWS keys are stored in GitHub.
-- **Deploy workflow** (`deploy-ecs.yml`, triggered by `workflow_dispatch` or a `v*` tag):
-  1. OIDC login.
-  2. Build and push to ECR.
-  3. Render the task definitions with the new image (`amazon-ecs-render-task-definition`).
-  4. Run the migration task.
-  5. `amazon-ecs-deploy-task-definition` with `wait-for-service-stability`.
-  6. Smoke-test `/readyz` through the CloudFront URL.
-  7. Rely on the ECS deployment circuit breaker for automatic rollback.
+- **Deploy workflow** (`deploy-ecs.yml`, triggered by `workflow_dispatch` or a `v*` tag): OIDC login, then the same `infra/scripts/deploy.sh` as `make aws-deploy`:
+  1. Build and push both images to ECR, tagged with the git SHA.
+  2. Register new task-definition revisions with only the image changed (AWS CLI, not the render/deploy actions).
+  3. Run the migration task and check its exit code.
+  4. Roll both services and wait until they are stable.
+  5. Smoke-test `/readyz` through the CloudFront URL.
+  6. Rely on the ECS deployment circuit breaker for automatic rollback.
 - **Infrastructure as code: Terraform (now in scope)**, in `infra/terraform/aws/`. On a personal account, a clean, complete **`terraform destroy`** matters more than saving the 2–3 hours it takes to write. It is also a reproducible artefact for the DevOps score.
-  - **Files:**
-    - `network.tf`: VPC, 2 public + 2 private subnets across 2 AZs, no NAT.
-    - `security.tf`: security groups for CloudFront→ALB→tasks→RDS.
-    - `ecr.tf`: ECR repositories.
-    - `rds.tf`: the database.
-    - `secrets.tf`: secret *containers* only. Values are set out-of-band with `aws secretsmanager put-secret-value`, so keys never enter Terraform state.
-    - `iam.tf`: task execution role, task role, and the **GitHub OIDC provider + deploy role** (trust scoped to this repo's `main` branch and tags).
-    - `alb.tf`, `cloudfront.tf`.
-    - `ecs.tf`: cluster, services, initial task definitions, CloudWatch log groups with 7-day retention.
-    - `budget.tf`: **AWS Budgets email alerts** at 50%/80%/100% of a monthly limit, e.g. US$30.
+  - **Files** (as built):
+    - `main.tf`, `variables.tf`, `outputs.tf`: provider, inputs and outputs (CloudFront URL, ECR URIs, role ARN, ...).
+    - `network.tf`: VPC, 2 public + 2 private subnets across 2 AZs, no NAT; security groups for CloudFront→ALB→tasks→RDS.
+    - `data.tf`: ECR repositories with lifecycle policies, RDS, the secret *container* with placeholder values (real values are set out of band with `infra/scripts/set-secrets.*`, so keys never enter Terraform state), and **AWS Budgets email alerts** at 50%/80%/100% of `monthly_budget_usd`.
+    - `iam.tf`: task execution role, task role, and the **GitHub OIDC provider + deploy role** (trust scoped to this repo's `aws` environment, decision 21).
+    - `edge.tf`: ALB, target groups, listener rules and CloudFront.
+    - `ecs.tf`: cluster, services, initial task definitions, CloudWatch log groups.
   - **State:** a local state file (git-ignored) is fine for a personal, single-user project. An S3 backend with a lock is documented as the team setup.
   - **No drift fights:** the ECS services use `lifecycle { ignore_changes = [task_definition] }`. Terraform owns the infrastructure; the deploy workflow owns new task-definition revisions.
   - **Safety rule:** `terraform apply` and `terraform destroy` create or remove billable resources, so they are **only ever run with your explicit go-ahead**. `terraform plan` output is reviewed first.
@@ -654,7 +661,7 @@ New-account verification can take from minutes to hours, so this runs in paralle
 
 ### 11.2 Alternative deployment target: Google Cloud Run (`asia-southeast1`, Singapore)
 
-Documented and kept deployable with a separate manual workflow, `deploy-cloudrun.yml`, but not the primary path.
+Documented only (DEPLOYMENT.md §5); the repo has no Cloud Run workflow or service files.
 
 | Concern | Cloud Run equivalent |
 |---|---|
@@ -664,7 +671,7 @@ Documented and kept deployable with a separate manual workflow, `deploy-cloudrun
 | RDS | Cloud SQL for PostgreSQL (pgvector supported), via the Cloud SQL connector |
 | Secrets Manager | Secret Manager, mounted as env vars |
 | OIDC role | Workload Identity Federation for GitHub Actions |
-| Migration task | **Cloud Run Job** running the same image with the alembic command |
+| Migration task | **Cloud Run Job** running the same image with `python -m app.db.init` |
 
 **Cloud Run caveats for our design:**
 - Background tasks keep running after the POST returns only with **instance-based billing ("CPU always allocated")**.
@@ -675,58 +682,55 @@ Documented and kept deployable with a separate manual workflow, `deploy-cloudrun
 | Env | Where | LLM | Langfuse | Data |
 |---|---|---|---|---|
 | local | `docker compose up` | `auto` (mock until keys) | Langfuse Cloud Hobby (off until keys are set) | live APIs + snapshot fallback |
-| ci | GitHub Actions | `mock` | off | snapshots only (respx) |
-| aws (primary) | ECS Fargate | `live` | Langfuse Cloud Hobby (self-hosted in a real production deployment) | live + fallback |
-| gcp (alt) | Cloud Run | `live` | same | live + fallback |
+| ci | GitHub Actions | `mock` | off | snapshots only (`OFFLINE_MODE=true`) |
+| aws (primary) | ECS Fargate | `auto` (keys from Secrets Manager) | Langfuse Cloud Hobby (self-hosted in a real production deployment) | live + fallback |
+| gcp (alt) | Cloud Run | `auto` | same | live + fallback |
 
 ---
 
 ## 12. Repository structure
 
+As built (19 Oct). The original plan also had Alembic, a Cloud Run folder, nightly workflows, pre-commit
+and a self-hosted Langfuse compose file; those stayed stretch (§13).
+
 ```
 /
-├── README.md  ARCHITECTURE.md  TESTING.md  DATA_SOURCES.md  DEPLOYMENT.md  INNOVATION.md
-├── docker-compose.yml  docker-compose.langfuse.yml  .env.example  Makefile  .pre-commit-config.yaml
-├── .github/workflows/{ci.yml,deploy-ecs.yml,deploy-cloudrun.yml,nightly-llm-eval.yml}
+├── README.md  ARCHITECTURE.md  TESTING.md  DATA_SOURCES.md  DEPLOYMENT.md  INNOVATION.md  plan.md  todo.md
+├── docker-compose.yml  docker-compose.loadtest.yml  .env.example  Makefile
+├── .github/workflows/{ci.yml,deploy-ecs.yml,security.yml}
 ├── infra/
-│   ├── terraform/aws/  # network, security, ecr, rds, secrets, iam (+GitHub OIDC), alb,
-│   │                   # cloudfront, ecs (api+gotenberg sidecar, frontend, migrate task), budget,
-│   │                   # variables.tf, outputs.tf (CloudFront URL, ECR URIs, role ARN)
-│   └── gcp/            # service-api.yaml (multi-container), service-frontend.yaml, job-migrate.yaml, SETUP.md
+│   ├── terraform/aws/  # main, variables, outputs, network (VPC + security groups), data (ECR, RDS,
+│   │                   # secret, budget), iam (+GitHub OIDC), edge (ALB + CloudFront), ecs
+│   └── scripts/        # deploy.sh, pause.sh, set-secrets.sh / set-secrets.ps1
 ├── backend/
-│   ├── pyproject.toml  Dockerfile  alembic/
+│   ├── pyproject.toml  uv.lock  .python-version  Dockerfile
 │   ├── app/
-│   │   ├── main.py  config.py  deps.py
-│   │   ├── api/            # routers: analyses, datasets, sources, llm, ws
-│   │   ├── agents/
-│   │   │   ├── graph.py    # LangGraph assembly
-│   │   │   ├── state.py
-│   │   │   ├── coordinator.py  extraction.py  analytics.py  writer.py  verifier.py
-│   │   │   ├── react.py    # shared ReAct sub-graph builder
-│   │   │   └── prompts/
-│   │   ├── tools/          # catalog, fetch_*, web_*, quality, cleaning, analytics, charts
-│   │   ├── sources/        # singstat_mcp.py (+ REST fallback) datagov.py mom.py internal.py base.py
-│   │   ├── mcp/            # MCP client config (servers.yaml), tool loading via langchain-mcp-adapters
-│   │   ├── web/            # search providers (tavily, ddg, mock), safe_fetch (SSRF guards),
-│   │   │                   # extract (trafilatura, read_html), grounding check, trust tiers, injection filter
-│   │   ├── llm/            # router.py providers/ (openai, gemini, bedrock, mock) costs.py
-│   │   ├── analytics/      # pure functions: trends.py stats.py forecast.py
-│   │   ├── quality/        # pandera schemas, checks, cleaning
-│   │   ├── verification/   # numeric, citation, entity, judge
-│   │   ├── events/         # publisher, schemas
-│   │   ├── db/             # models.py session.py repositories/
-│   │   ├── runner/         # TaskRunner interface, asyncio implementation, event bus
-│   │   ├── observability/  # langfuse.py (handler factory, masking, scores), logging.py
-│   │   └── export/         # md, csv, json, html template + Gotenberg client for pdf
-│   ├── data/{snapshots/,catalog.yaml,sector_map.yaml,internal_seed/}
-│   └── tests/{unit/,integration/,data_quality/,llm_eval/,load/,fixtures/}
+│   │   ├── main.py  main_limiter.py  config.py  cli.py
+│   │   ├── api/            # chats, runs, analyses, summary, activity, meta, ws, schemas, security
+│   │   ├── agents/         # graph.py (LangGraph), react.py (ReAct loop), prompts.py, vocab.py,
+│   │   │                   # mock_policies.py (scripted MockLLM), suggestions.py (follow-up questions)
+│   │   ├── tools/          # extraction.py, analytics_tools.py, base.py
+│   │   ├── sources/        # singstat_mcp.py (+ REST fallback), datagov.py, mom.py, internal.py, base.py
+│   │   ├── web/            # search providers, SSRF-safe fetch, extraction, grounding, trust tiers, injection filter
+│   │   ├── llm/            # router.py, providers.py, costs.py
+│   │   ├── analytics/      # stats.py, charts.py
+│   │   ├── quality/        # checks.py (validation + cleaning)
+│   │   ├── verification/   # checks.py (numeric, citation, entity)
+│   │   ├── core/           # models.py (canonical columns, Facts), events.py (bus), run_context.py, chaos.py
+│   │   ├── runner/         # task_runner.py, followup.py
+│   │   ├── db/             # models.py, session.py, init.py (create_all + seed)
+│   │   ├── observability/  # langfuse.py
+│   │   ├── export/         # markdown.py, files.py (json/csv/html/pdf via Gotenberg), docx.py
+│   │   └── scripts/        # build_samples, build_datagov_index
+│   ├── data/               # snapshots/, mom/ sample workbook, datagov_catalogue.json
+│   └── tests/              # unit/, integration/, api/, eval/, load/
 └── frontend/
-    ├── package.json  Dockerfile  vite.config.ts  nginx.conf  tsconfig.json  index.html
-    ├── src/{main.tsx,App.tsx,routes.tsx}
-    ├── src/pages/{NewAnalysis.tsx,RunView.tsx,History.tsx,Datasets.tsx}
-    ├── src/components/{agent-timeline/,insights/,charts/,report/,quality/}
-    ├── src/lib/{api-client.ts,ws.ts,types.gen.ts}
-    └── tests/unit/
+    ├── package.json  package-lock.json  Dockerfile  nginx.conf.template  vite.config.ts  index.html
+    ├── src/{main.tsx,App.tsx,index.css}
+    ├── src/pages/          # Home, Chat, RunActivity
+    ├── src/components/     # ChatShell, Sidebar, ChatBar, Turn, Activity, PreviewPanel, ResultPanels,
+    │                       # RunDetails, ClarificationCard, SettingsDialog, DemoControls, ui/ (Radix wrappers)
+    └── src/lib/            # api.ts, types.ts, activity.ts, useRunEvents.ts, useRunToasts.ts, ... (+ *.test.ts)
 ```
 
 ---
@@ -854,7 +858,7 @@ Each point is tied to a concrete element of the implementation:
 | 8 | HTTPS / domain | No custom domain, so **CloudFront in front of the ALB** provides HTTPS on `*.cloudfront.net` (§11.1). |
 | 9 | SingStat access | **SingStat MCP as the primary access path** (verified live on 3 Oct 2026: 3 tools, no auth, streamable HTTP). Discovery and metadata tools go to the agent directly, and data fetches are wrapped by our adapter. REST Table Builder API and snapshots as fallbacks (§5.3). |
 | 10 | Web search & extraction | **Added to the Extraction agent**: `web_search` / `fetch_web_page` / `extract_web_data` with Tavily (free tier) → DuckDuckGo → mock, trust tiers, grounding check, SSRF and injection guards, per-run budget (§5.4). |
-| 11 | Build-time simplifications (3 Oct) | Plain pandas quality checks instead of pandera (every rule explicit and testable); Tailwind components instead of shadcn/ui; official `mcp` SDK client directly instead of `langchain-mcp-adapters` (discovery/metadata tools still exposed to the agent as tools); `create_all` + seed (`python -m app.db.init`, also the ECS migration task) instead of Alembic; pip instead of uv. Installed versions: mcp 2.3, langgraph 1.2, langchain-core 1.6, langfuse 4.16. |
+| 11 | Build-time simplifications (3 Oct) | Plain pandas quality checks instead of pandera (every rule explicit and testable); Tailwind components instead of shadcn/ui; official `mcp` SDK client directly instead of `langchain-mcp-adapters` (discovery/metadata tools still exposed to the agent as tools); `create_all` + seed (`python -m app.db.init`, also the ECS migration task) instead of Alembic; pip instead of uv (reversed by decision 27). Installed versions: mcp 2.3, langgraph 1.2, langchain-core 1.6, langfuse 4.16. |
 | 12 | ReAct implementation | Provider-neutral structured `ReActStep` JSON (thought / action / input / final answer) inside LangGraph nodes, so OpenAI, Gemini and the scripted MockLLM behave identically and the thought is explicit for the timeline. |
 | 13 | Access token header | The frontend sends `X-Access-Token`, not `Authorization`, because CloudFront only forwards `Authorization` when it is part of the cache key. |
 | 14 | LLM providers (7 Oct) | **OpenAI + Google Gemini** stay the two providers (Anthropic was considered and dropped as the least-effort option). `LLM_PROVIDER_ORDER` also accepts `google` as an alias for `gemini`. |
@@ -871,5 +875,10 @@ Each point is tied to a concrete element of the implementation:
 | 25 | Chat implementation (14 Oct) | Built todo.md CL1-CL14 and CL16. **Follow-up context:** the next turn carries the earlier facts (flagged `carried_fact_ids`) and, while the earlier runs are still in memory (last 25), their datasets. `fetch_singstat` reuses a carried table when it covers the requested series and years, otherwise refetches and merges so earlier series keep their data. If an earlier run was evicted or the server restarted, only its text and facts carry over. **Honesty rule:** the MockLLM writer ignores carried facts, so an unanswerable follow-up says "insufficient data" instead of repeating the earlier answer. **Offline mode:** a request for some series of a table is served from any recording of that table that holds them all. **Timestamps (R10):** all DB datetimes use a `UTCDateTime` type, so the API always sends an offset. **Retry** adds a `version` to the turn; one run per chat at a time. Word export uses `python-docx`, without charts. Run details come from `GET /analyses/{id}/summary`. |
 | 26 | Home fixes and Run activity (15 Oct) | The Home wordmark reads "OWL" (no letter spacing); the header gear becomes a labelled **Settings** button; menu ticks sit outside the flex row so labels no longer shift when checked. **Run activity:** a sidebar link opens `/activity`, combining the per-run Run details dialog with artboard 5's run list. Runs are counted per week (Monday start), month or year in the **viewer's time zone** (the browser sends its IANA zone; unknown zones fall back to UTC). The table shows up to 12 weeks or months (every year), never before the first run, with a running total that includes older runs. Counts are aggregated in Python from three columns plus `result.verification.passed`, which is fine at demo scale; a `GROUP BY` per dialect would replace it if run volume grows. |
 
+| 27 | Python packaging (19 Oct) | **uv with a committed `uv.lock`**, reversing decision 11's "pip instead of uv". Without a lockfile, `pyproject.toml`'s `>=` ranges meant Docker and CI installed whatever was newest on the day, and a CVE scan couldn't name the versions that ship. Dev tools moved from the `dev` extra to a PEP 735 `dev` dependency group; `.python-version` pins 3.12 (same as CI and Docker). The Dockerfile copies a pinned uv binary and runs `uv sync --locked --no-dev --no-install-project` into `/opt/venv`; CI uses `astral-sh/setup-uv` and `uv sync --locked`, so a stale lock fails the build. Backend Makefile targets use `uv run --locked`, which replaces the Windows/macOS venv-path detection. **No `requirements.txt`**: `pyproject.toml` declares, `uv.lock` pins, and `uv export` produces one when a tool needs it. uv is pinned to 0.12.23 (the newest release at least two weeks old on 19 Oct). |
+| 28 | CVE scanning (19 Oct) | `.github/workflows/security.yml` runs monthly (02:00 UTC on the 1st) and on demand. **pip-audit** 2.10.1 on the hashed runtime export of `uv.lock` (fails on any known vulnerability); **npm audit** on `package-lock.json`, dev tooling included (fails on high+); **Trivy** 0.75.0 on the built backend and frontend images (fails on fixable high+). Trivy runs from its pinned Docker image, not `aquasecurity/trivy-action`, whose release tags were all re-published on 20 Mar 2026. Results go to the run summary; GitHub emails a failed scheduled run. Dependabot alerts (a repo setting) are the continuous complement. First run findings are in TESTING.md §9. |
+| 29 | Fixes from the first scan (19 Oct) | Frontend image on **`nginx:1.30-alpine`** (stable line) with `apk upgrade` in the runtime stage, so each build picks up Alpine fixes released after the base image; its healthcheck uses `127.0.0.1` because busybox `wget` tries `::1` first. Frontend toolchain: **vite 7** (not 8, which switches to Rolldown and needs plugin-react 6) with `@vitejs/plugin-react` 5 and **vitest 4**; **react-router-dom 7**, a drop-in for our usage. Vite 7 needs Node 20.19+ or 22.12+. |
+
 ### Still open
-- AWS deployment (steps in DEPLOYMENT.md) waits on working AWS credentials. Live-LLM runs wait on a `GOOGLE_API_KEY` (OpenAI is available from the system environment). Langfuse and Tavily keys are optional.
+- Gemini and Langfuse: todo.md K1 and K2 were struck through on 13 Oct, but no result is recorded anywhere, so whether they were exercised live is unconfirmed. Tavily is optional and untested.
+- The first CVE scan's findings are fixed (decision 29). AWS was destroyed on 15 Oct, so the next deploy ships the fixed images.

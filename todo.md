@@ -1,10 +1,64 @@
 # TODO: open items
 
-Snapshot: **Wednesday 7 Oct 2026**. The deadline no longer applies. LLM providers stay **OpenAI + Google
+Snapshot: LLM providers stay **OpenAI + Google
 Gemini** (decision 14).
 
 **Owner:** 👤 **You** = manual step only you can do · 🤖 **Claude** = I can do it when you say go ·
 👥 **Both** = I prepare, you review or approve.
+
+## Done on 19 Oct (verified)
+
+- **Docs audit** against the code: README, TESTING, ARCHITECTURE, DEPLOYMENT, CLAUDE.md and plan.md §3, §7, §8,
+  §11, §12 corrected (chat API and schema, old page names, test counts 164 backend + 41 frontend, coverage 83%,
+  Settings dialog, Alembic/Cloud Run/openapi-typescript claims that were never built). DATA_SOURCES.md and
+  INNOVATION.md needed no changes.
+- **uv + `uv.lock`** (decision 27): Dockerfile, CI, Makefile and docs moved off pip. Ruff and 164 backend tests
+  pass on the locked environment; the image builds, imports the app, runs as `appuser` and has no dev tools in it.
+  No `requirements.txt` (pyproject declares, `uv.lock` pins).
+- **Monthly CVE scan** (decision 28): `.github/workflows/security.yml` (pip-audit, npm audit, Trivy). Each tool was
+  run locally with the workflow's versions; findings below (S1-S3). Not yet run on GitHub.
+- **CI** now runs the 41 Vitest tests (`npm test`) in the frontend job.
+- **First-scan findings fixed** (S1-S3): nginx 1.30 base + `apk upgrade`, vite 7, vitest 4, react-router 7.
+  Trivy, npm audit and pip-audit all clean locally (decision 29).
+- **todo.md re-audit** against git, GitHub and the repo: struck everything finished or overtaken. Findings: all
+  work up to 15 Oct is merged to `main` (PRs #1-#4, last `f21b971`); **AWS was destroyed on 15 Oct** (local
+  Terraform state empty since 22:37, the CloudFront hostname no longer resolves); this machine's `backend/.venv`
+  is already uv-managed; the repo is still private with no collaborators (A5).
+
+## Test run, 19 Oct
+
+Passed: backend `pytest -m "not contract and not llm"` **164 passed, 83% coverage**; `ruff` clean; hallucination
+evaluation **150/150** flagged, 0 of 29 clean claims wrongly flagged; frontend ESLint, `tsc`, Vitest **41 passed (9
+files)** and the production build (7.8 s). TESTING.md's figures already match this run.
+
+**Done 20 Oct:** the load test and the CI smoke job now go through the chat API (`/chats`, follow-ups). Run locally against the offline MockLLM stack: load test 2,910 requests, 0 failures, p95 35 ms, p99 57 ms (TESTING.md §6 updated); the smoke job's script ran end to end (chat plus follow-up, both `completed`). The smoke job itself has not yet run on GitHub (see S4).
+
+**Skipped on purpose (not run in this pass):**
+
+| Item | Why skipped | Owner |
+|---|---|---|
+| Browser walk-through and exports (TESTING.md §8) | Manual: someone has to look at it. The keyboard-only demo script moved to Stretch (20 Oct) | 👤 |
+| `-m contract` (live SingStat MCP) tests | Live service. Live-LLM checks (`-m llm`, OpenAI / Gemini) confirmed done by you on 20 Oct | 👤 |
+| CI on GitHub (including the updated `smoke` job), `security.yml` | Not run on GitHub; see S4 | 👤 |
+
+**Outdated entries in this file** (kept as history, superseded):
+
+- ~~7 Oct block: "143 tests, 82% backend coverage" → now 164 tests, 83% (and 41 frontend tests).~~ (history; current figures are above)
+- ~~7 Oct block: the load-test result and "Browser walk-through (C4)" were done against the old `/analyses` UI, before the chat layout (decision 24); re-run for the chat app.~~ (history; current figures are above)
+- ~~U14 and U18 progress lines quote "18 Vitest tests" and "26 frontend tests"; the current count is 41.~~ (history; current figures are above)
+- ~~Chat layout status quotes "157 backend tests" and "40 frontend tests"; current is 164 and 41.~~ (history; current figures are above)
+- ~~A2, K1, K2 (Gemini key, live-LLM run of the sample queries, Langfuse)~~ ✅ 20 Oct: you confirmed all three as done. No result was written into the repo, so the figures are not recorded.
+- ~~D5 (AWS browser check) is struck through, but the AWS section says the browser check and a live OpenAI run are "still outstanding".~~ Moot: AWS was destroyed 15 Oct; do it on the next deploy.
+
+## 🔐 Security findings from the first scan (19 Oct; TESTING.md §9)
+
+| # | Item | Owner |
+|---|---|---|
+| S1 | ~~**Frontend image:** `nginx:1.27-alpine` (Alpine 3.21.3) has 55 fixable CVEs, 2 critical (OpenSSL) and 53 high~~ ✅ 19 Oct: `nginx:1.30-alpine` (stable line, Alpine 3.24) + `apk upgrade` in the runtime stage; Trivy 0 high/critical. Compose stack verified (all healthy, `/readyz`, SPA deep links, `/api` and WebSocket proxying). Also fixed the Docker healthcheck, which the new Alpine broke (busybox `wget localhost` tries `::1`, nginx listens on IPv4 only; now `127.0.0.1`). AWS was destroyed on 15 Oct, so the next deploy ships the fixed image. | 🤖 |
+| S2 | ~~**Frontend dev tooling:** vitest 2 (critical: tinypool prototype pollution → RCE) and vite 5 (high)~~ ✅ 19 Oct: vite 7.3.7 + @vitejs/plugin-react 5.2 + vitest 4.1.12 (vite 7 is patched and avoids vite 8's switch to Rolldown and plugin-react 6). Lint, typecheck, 41/41 tests and build pass. | 🤖 |
+| S3 | ~~**react-router-dom 6** (moderate, shipped in the bundle): open redirect via backslash in `<Link>`/`useNavigate`~~ ✅ 19 Oct: react-router-dom 7.18.4, no code changes needed. Checked in Chrome against the compose stack: chat deep link, sidebar `NavLink` and `/activity` without page reloads, Home, `/analyses/:id` → its chat, `/history` → `/`. App shell 381 kB (was 370 kB). `npm audit`: 0 vulnerabilities. | 🤖 |
+| S4 | Merge to `main` so the monthly schedule runs, then trigger it once by hand (Actions → Security scan). Optionally turn on Dependabot alerts (Settings → Code security) for continuous alerts between scans. | 👤 |
+| S5 | ~~Everyone with a pip-made `backend/.venv`: install uv (`winget install astral-sh.uv` / `brew install uv`), then `make install`. The old `backend/policy_analytics_backend.egg-info` can be deleted.~~ ✅ 19 Oct on this machine: uv 0.12.23 installed and `backend/.venv` is already uv-managed (packages list `uv` as installer). The leftover `policy_analytics_backend.egg-info` is git-ignored and safe to delete. | 👤 |
 
 ## Done on 7 Oct (verified)
 
@@ -46,15 +100,15 @@ Gemini** (decision 14).
 | # | Item | Details |
 |---|---|---|
 | A1 | ~~Fix AWS credentials~~ ✅ | Works with the SSO profile `meow98` (AdministratorAccess, `ap-southeast-1`): run `export AWS_PROFILE=meow98` before any `make aws-*`. The **default** profile holds a stale, invalid access key; delete it from `~/.aws/credentials` (or leave it unused) so nothing picks it up by accident. |
-| A2 |~~Google Gemini key~~ 👤 | `GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called. With it I can test Gemini directly and the OpenAI → Gemini fallback. |
-| A3 | **Review and edit docs** 👤 | Especially INNOVATION.md (written in your voice as a draft; remove the comment on line 1). |
-| A4 | ~~Commit and push~~ 👥 | Nothing from 7 Oct is committed yet. Say the word and I'll commit in logical chunks and push to `origin/main`. CI then runs on GitHub for the first time. |
-| A5 | **Repo visibility** 👤 | Public, or invite the assessors. |
+| A2 | ~~Google Gemini key~~ ✅ 20 Oct: confirmed done by you | ~~`GOOGLE_API_KEY` in `.env` is still a placeholder, so the second provider has never been called.~~ |
+| A3 | **Review and edit docs** 👤 | Especially INNOVATION.md (written in your voice as a draft; remove the comment on line 1, still there on 19 Oct). |
+| A4 | ~~Commit and push~~ ✅ | ~~Nothing from 7 Oct is committed yet.~~ Everything up to 15 Oct is merged to `main` (PRs #1-#4, last `f21b971`). The 19 Oct changes on `dev` are not committed yet. |
+| A5 | **Repo visibility** 👤 | Public, or invite the assessors. 19 Oct: still private, and you are the only collaborator. |
 | A6 | Demo rehearsal + backup recording (C8) 👤 | plan.md §15. Keep `OFFLINE_MODE=true` + `LLM_MODE=mock` as the fallback. |
 
 ## 🟠 AWS deployment (DEPLOYMENT.md §3)
 
-**Redeployed 13 Oct** (42 resources applied under SSO profile `meow98`, `make aws-deploy` pushed `d65dd66`, `/readyz` OK at https://d2vrvoig653mbb.cloudfront.net; still up, so costs are accruing: `make aws-pause` or `aws-destroy` when done). A browser check on AWS (D5) and a live OpenAI run there are still outstanding.
+**Destroyed again on 15 Oct** (local Terraform state empty since 22:37; https://d2vrvoig653mbb.cloudfront.net no longer resolves), so nothing should be accruing. Not confirmed from the AWS side: the `meow98` SSO token has expired, so glance at the billing console. ~~Redeployed 13 Oct (42 resources, `make aws-deploy` pushed `d65dd66`, `/readyz` OK); still up, so costs are accruing.~~ A browser check on AWS (D5) and a live OpenAI run there were never recorded; do them on the next deploy.
 
 **Previously destroyed on 9 Oct to stop costs** (all 42 resources; no leftovers, no DB snapshots). It was proven
 working end to end on 8 Oct: Terraform apply, secrets, `make aws-deploy`, live at a CloudFront URL with
@@ -74,11 +128,11 @@ so redeploying is: `make aws-plan` → `make aws-apply` → `infra/scripts/set-s
 |---|---|---|
 | K1 | ~~Live-LLM run of every sample query (OpenAI, then Gemini): agent quality (H9), out-of-scope handling (M10), verification rates~~ | 🤖 (costs a few US cents per run) |
 | K2 | ~~Langfuse: traces appear, LLM calls nest under the run, scores attach, masking works, "Open trace" link~~ | 🤖 after keys |
-| K3 | ~~DuckDuckGo live search~~ ✅ 13 Oct: live query returned 5 MOM/SingStat hits, all trust tier 1; `safe_fetch` + `extract_content` read a real MOM press release and the SSRF guard blocked `169.254.169.254`. **Tavily still untested** (needs `TAVILY_API_KEY`) | 👤 key, then 🤖 |
+| K3 | ~~DuckDuckGo live search~~ ✅ 13 Oct: live query returned 5 MOM/SingStat hits, all trust tier 1; `safe_fetch` + `extract_content` read a real MOM press release and the SSRF guard blocked `169.254.169.254`. ~~Tavily still untested~~ ✅ 20 Oct: tested by you | 👤 |
 | K4 | ~~Confirm model ids and prices in `llm/costs.py` (M3)~~ | 👤 |
 | M1 | ~~MOM workbook is a disclosed sample built from MOM-sourced figures; optionally point `MOM_EXCEL_URL` at a real MOM download~~ | 👤 decide |
 | M7 | One DB session per event: fine at 50 users; batch if needed | 🤖 |
-| M12 | Mobile layout, long-claim wrapping, empty states | 🤖 |
+| M12 | ~~Mobile layout, long-claim wrapping, empty states~~ ✅ U12 + CL7, checked at 390 px on 14 Oct (no real phone yet) | 🤖 |
 
 ## 🎨 Frontend UI enhancement with Radix Primitives (planned 12 Oct, approved 13 Oct, **built 13 Oct**)
 
@@ -99,28 +153,28 @@ together with U17:
 
 | # | Finding | Fix |
 |---|---|---|
-| R1 | **U10 isn't done to spec.** `ui/scroll-area.tsx` renders `ScrollArea.Content` without `disableImplicitContentElement` on the Viewport. Radix therefore still adds its own deprecated `display: table` wrapper, with ours nested inside it (radix `scroll-area.tsx` L233-257). The `display: block` fix only applies to the inner element. | ✅ 14 Oct: `disableImplicitContentElement` on the Viewport. |
-| R2 | The shared focus ring in `index.css` is unlayered CSS, and in Tailwind 4 unlayered CSS beats every utility (utilities live in `@layer utilities`). As a result `outline-none` on menu items is ignored and no component can restyle its own ring. | ✅ 14 Oct: moved into `@layer base`. |
-| R3 | `ClarificationCard` puts `role="alert"` + `aria-live="assertive"` on a container that holds buttons and a form. Screen readers then announce the whole card, controls included. | ✅ 14 Oct: `role="region"`, named by its heading and described by the question; focus still moves to it. Test added. |
-| R4 | The mobile Results/Activity switcher is a `Tabs` with no `TabsContent`, so each tab's `aria-controls` points at an id that doesn't exist. | ✅ 14 Oct: single-select `ToggleGroup` view switch. |
-| R5 | Each timeline row's `CollapsibleTrigger` is a `<button>` containing a `<div>` and a `<p>`. Buttons may only contain phrasing content. | ✅ 14 Oct: the row is built from spans. |
-| R6 | The toast replay guard compares the server's `e.ts` with the browser clock (`mountedAt - 5000`). If the client clock runs more than 5 s ahead of the server, every live toast is dropped. | ✅ 14 Oct: the WebSocket now sends `{type: "replay_done", last_seq}` after its replay; the UI toasts only events after that seq. Backend and hook tests added. |
-| R7 | Docs and code disagree: decision 22 and this section say "subpath imports", but the code imports from the root `radix-ui` entry (only `Slot` uses a subpath). Tree-shaking still works: the shared Radix chunk is 39 kB. | ✅ 14 Oct: decision 22 now says root `radix-ui` imports (tree-shaken). |
-| R8 | `--font-sans` names Inter, but Inter is never loaded (no `@font-face`, no link), so the app actually renders in Segoe UI or the system font. | ✅ 14 Oct: IBM Plex Sans and Source Serif 4 self-hosted via `@fontsource` (latin subsets). |
-| R9 | The tokens are only partly applied: `StatusBadge`, `TierBadge`, `ClarificationCard`, report links and about 40 `text-slate-*` / `bg-slate-*` classes are still hard-coded. | ✅ 14 Oct: every hard-coded `slate`/`blue`/`amber`/`red`/`emerald` class is now a token. |
+| R1 | ~~**U10 isn't done to spec.** `ui/scroll-area.tsx` renders `ScrollArea.Content` without `disableImplicitContentElement` on the Viewport. Radix therefore still adds its own deprecated `display: table` wrapper, with ours nested inside it (radix `scroll-area.tsx` L233-257). The `display: block` fix only applies to the inner element.~~ ✅ | ✅ 14 Oct: `disableImplicitContentElement` on the Viewport. |
+| R2 | ~~The shared focus ring in `index.css` is unlayered CSS, and in Tailwind 4 unlayered CSS beats every utility (utilities live in `@layer utilities`). As a result `outline-none` on menu items is ignored and no component can restyle its own ring.~~ ✅ | ✅ 14 Oct: moved into `@layer base`. |
+| R3 | ~~`ClarificationCard` puts `role="alert"` + `aria-live="assertive"` on a container that holds buttons and a form. Screen readers then announce the whole card, controls included.~~ ✅ | ✅ 14 Oct: `role="region"`, named by its heading and described by the question; focus still moves to it. Test added. |
+| R4 | ~~The mobile Results/Activity switcher is a `Tabs` with no `TabsContent`, so each tab's `aria-controls` points at an id that doesn't exist.~~ ✅ | ✅ 14 Oct: single-select `ToggleGroup` view switch. |
+| R5 | ~~Each timeline row's `CollapsibleTrigger` is a `<button>` containing a `<div>` and a `<p>`. Buttons may only contain phrasing content.~~ ✅ | ✅ 14 Oct: the row is built from spans. |
+| R6 | ~~The toast replay guard compares the server's `e.ts` with the browser clock (`mountedAt - 5000`). If the client clock runs more than 5 s ahead of the server, every live toast is dropped.~~ ✅ | ✅ 14 Oct: the WebSocket now sends `{type: "replay_done", last_seq}` after its replay; the UI toasts only events after that seq. Backend and hook tests added. |
+| R7 | ~~Docs and code disagree: decision 22 and this section say "subpath imports", but the code imports from the root `radix-ui` entry (only `Slot` uses a subpath). Tree-shaking still works: the shared Radix chunk is 39 kB.~~ ✅ | ✅ 14 Oct: decision 22 now says root `radix-ui` imports (tree-shaken). |
+| R8 | ~~`--font-sans` names Inter, but Inter is never loaded (no `@font-face`, no link), so the app actually renders in Segoe UI or the system font.~~ ✅ | ✅ 14 Oct: IBM Plex Sans and Source Serif 4 self-hosted via `@fontsource` (latin subsets). |
+| R9 | ~~The tokens are only partly applied: `StatusBadge`, `TierBadge`, `ClarificationCard`, report links and about 40 `text-slate-*` / `bg-slate-*` classes are still hard-coded.~~ ✅ | ✅ 14 Oct: every hard-coded `slate`/`blue`/`amber`/`red`/`emerald` class is now a token. |
 
 **U18 progress (14 Oct):** lint, typecheck, 26 frontend tests, build, ruff and 144 backend tests pass. A browser
 walk-through on MockLLM (offline) covered New analysis, the run view (Insights, Charts, Data & quality, Report,
 timeline, live toasts) and History at 1440 px, and all three pages at 390 px. That pass found and fixed three
 phone-width defects: the activity pane widened the page to 920 px (grid item without `min-w-0`), History's
 visually hidden "Actions" label escaped its scroll box and widened the page, and the question column wrapped to
-one word per line. **Still outstanding:** the keyboard-only run of the demo script (now against the chat layout).
+one word per line. The keyboard-only run of the demo script (now against the chat layout) moved to Stretch on 20 Oct.
 
 **Finding (14 Oct), fixed 14 Oct:**
 
 | # | Finding | Fix |
 |---|---|---|
-| R10 | On SQLite (local dev), timestamps read back from the database have no timezone, so the browser treats UTC as local time: replayed timeline events and History show 4:58 AM for a run at 12:58 PM (UTC+8), while live events show the right time. Pre-existing; Postgres (`timestamptz`) is probably unaffected. | ✅ A `UTCDateTime` column type returns timezone-aware values on SQLite; API and WebSocket timestamps now end in `Z`/`+00:00` (test added). |
+| R10 | ~~On SQLite (local dev), timestamps read back from the database have no timezone, so the browser treats UTC as local time: replayed timeline events and History show 4:58 AM for a run at 12:58 PM (UTC+8), while live events show the right time. Pre-existing; Postgres (`timestamptz`) is probably unaffected.~~ ✅ | ✅ A `UTCDateTime` column type returns timezone-aware values on SQLite; API and WebSocket timestamps now end in `Z`/`+00:00` (test added). |
 
 Reference: [radix-ui/primitives](https://github.com/radix-ui/primitives). These are unstyled, accessible
 React primitives. Install the single **`radix-ui@^1.8.0`** package and import from its root entry
@@ -143,40 +197,40 @@ have accessibility gaps:
 
 | # | Item | Radix primitive | Where |
 |---|---|---|---|
-| U0 | Install `radix-ui`. Create a styled wrapper layer in `src/components/ui/`, one file per primitive, plus a `Button` that supports `asChild` through `Slot` so links and buttons share styles. Mount `Tooltip.Provider` and `Toast.Provider` in `main.tsx`. Add design tokens (surface, border, muted, agent colours) to `@theme`, a shared `focus-visible` ring, and enter/exit keyframes in `index.css`. Exit animations must be CSS **keyframe** animations: Radix `Presence` waits for `animationend` before unmounting, and transitions don't trigger it. | Slot, Portal | `components/ui.tsx` → `components/ui/*`, `main.tsx`, `index.css` |
-| U1 | Controlled `Tabs.Root value={tab}` for the results tabs. The current auto-switch to Charts and back keeps working. Gains: arrow-key navigation, `tablist`/`tab`/`tabpanel` roles, `data-state=active` styling. | Tabs | `pages/RunView.tsx` |
-| U2 | Replace `FactChip`'s CSS-hover popup with a Tooltip. The trigger becomes focusable, the content is portalled (so it is no longer clipped), and it repositions on collision. | Tooltip | `ResultPanels.tsx` |
-| U3 | Use Switch + Label for the demo chaos toggles, "Include web context" and "show facts". This fixes the button-in-label markup and the invalid `left-4.5` knob class. | Switch, Label | `DemoControls.tsx`, `NewAnalysis.tsx`, `AgentTimeline.tsx` |
-| U4 | Confirm before deleting a History item. Focus starts on Cancel, and Esc or an outside click can't confirm by accident. | AlertDialog | `pages/History.tsx` |
+| U0 | ~~Install `radix-ui`. Create a styled wrapper layer in `src/components/ui/`, one file per primitive, plus a `Button` that supports `asChild` through `Slot` so links and buttons share styles. Mount `Tooltip.Provider` and `Toast.Provider` in `main.tsx`. Add design tokens (surface, border, muted, agent colours) to `@theme`, a shared `focus-visible` ring, and enter/exit keyframes in `index.css`. Exit animations must be CSS **keyframe** animations: Radix `Presence` waits for `animationend` before unmounting, and transitions don't trigger it.~~ ✅ | Slot, Portal | `components/ui.tsx` → `components/ui/*`, `main.tsx`, `index.css` |
+| U1 | ~~Controlled `Tabs.Root value={tab}` for the results tabs. The current auto-switch to Charts and back keeps working. Gains: arrow-key navigation, `tablist`/`tab`/`tabpanel` roles, `data-state=active` styling.~~ ✅ | Tabs | `pages/RunView.tsx` |
+| U2 | ~~Replace `FactChip`'s CSS-hover popup with a Tooltip. The trigger becomes focusable, the content is portalled (so it is no longer clipped), and it repositions on collision.~~ ✅ | Tooltip | `ResultPanels.tsx` |
+| U3 | ~~Use Switch + Label for the demo chaos toggles, "Include web context" and "show facts". This fixes the button-in-label markup and the invalid `left-4.5` knob class.~~ ✅ | Switch, Label | `DemoControls.tsx`, `NewAnalysis.tsx`, `AgentTimeline.tsx` |
+| U4 | ~~Confirm before deleting a History item. Focus starts on Cancel, and Esc or an outside click can't confirm by accident.~~ ✅ | AlertDialog | `pages/History.tsx` |
 
 **Phase 2: run-view polish (all 🤖)**
 
 | # | Item | Radix primitive | Where |
 |---|---|---|---|
-| U5 | Replace the four PDF/MD/JSON/CSV links with one "Export ▾" menu (keyboard and typeahead). History row actions (Re-run, Delete) move into a "⋯" menu. | DropdownMenu | `RunView.tsx`, `History.tsx` |
-| U6 | Toasts for mutation errors (cancel, re-run, delete, clarify), "export started", and notable run events (LLM/source fallback, verification rewrite, run finished). They are announced through `aria-live`, and F8 focuses the toast region. | Toast | new `ui/toast.tsx` + hook |
-| U7 | Make timeline events expandable: a keyboard-operable trigger, `aria-expanded`, and a height animation via `--radix-collapsible-content-height`. Data & quality: each dataset card's checks and cleaning-action lists collapse, with the score always visible. | Collapsible / Accordion | `AgentTimeline.tsx`, `ResultPanels.tsx` (DataPanel) |
-| U8 | Add a stage progress bar to the run header: interpret → plan → extract → quality → analyse → write → verify, derived from events and indeterminate while queued. Rebuild `ScoreBar` on Progress to get `role="progressbar"` and its aria values. | Progress | `RunView.tsx`, `ui` |
+| U5 | ~~Replace the four PDF/MD/JSON/CSV links with one "Export ▾" menu (keyboard and typeahead). History row actions (Re-run, Delete) move into a "⋯" menu.~~ ✅ | DropdownMenu | `RunView.tsx`, `History.tsx` |
+| U6 | ~~Toasts for mutation errors (cancel, re-run, delete, clarify), "export started", and notable run events (LLM/source fallback, verification rewrite, run finished). They are announced through `aria-live`, and F8 focuses the toast region.~~ ✅ | Toast | new `ui/toast.tsx` + hook |
+| U7 | ~~Make timeline events expandable: a keyboard-operable trigger, `aria-expanded`, and a height animation via `--radix-collapsible-content-height`. Data & quality: each dataset card's checks and cleaning-action lists collapse, with the score always visible.~~ ✅ | Collapsible / Accordion | `AgentTimeline.tsx`, `ResultPanels.tsx` (DataPanel) |
+| U8 | ~~Add a stage progress bar to the run header: interpret → plan → extract → quality → analyse → write → verify, derived from events and indeterminate while queued. Rebuild `ScoreBar` on Progress to get `role="progressbar"` and its aria values.~~ ✅ | Progress | `RunView.tsx`, `ui` |
 
 **Phase 3: navigation, filtering, mobile (🤖, covers M12)**
 
 | # | Item | Radix primitive | Where |
 |---|---|---|---|
-| U9 | Timeline filters by agent (coordinator, extraction, analytics, writer, verifier) and by event kind (reasoning, data, alerts), replacing the single "show facts" checkbox. Add a status filter to History, as plan.md §7 calls for. | ToggleGroup | `AgentTimeline.tsx`, `History.tsx` |
-| U10 | Give the timeline pane and the event JSON viewer custom scrollbars while keeping native scrolling. Use the 1.7+ `ScrollArea.Content` pattern: `Viewport`'s implicit wrapper is deprecated. | ScrollArea | `RunView.tsx`, `AgentTimeline.tsx` |
-| U11 | An "Expand" button on each chart opens it full-size in a modal Dialog, which needs a `Dialog.Title` (VisuallyHidden if needed). | Dialog, VisuallyHidden | `ChartsPanel` |
-| U12 | Mobile (below `lg`): Activity and Results become two top-level tabs instead of the fixed 420 px column, as plan.md §7 describes. Long claims wrap, and every panel has a proper empty state. | Tabs | `RunView.tsx` |
-| U13 | Clarification stays inline and non-modal, so the timeline stays visible. When the run enters `awaiting_input`, focus moves to the card and the question is announced via `aria-live`. Icon-only buttons get VisuallyHidden labels. | VisuallyHidden | `ClarificationCard.tsx` |
-| U14 | Vitest + Testing Library tests: Tabs keyboard navigation, the AlertDialog confirm flow, Switch toggling, and the export menu. jsdom needs `ResizeObserver`, `hasPointerCapture` and `scrollIntoView` stubs for Radix. Overlaps L1. | | `frontend/src/**/*.test.tsx` |
+| U9 | ~~Timeline filters by agent (coordinator, extraction, analytics, writer, verifier) and by event kind (reasoning, data, alerts), replacing the single "show facts" checkbox. Add a status filter to History, as plan.md §7 calls for.~~ ✅ | ToggleGroup | `AgentTimeline.tsx`, `History.tsx` |
+| U10 | ~~Give the timeline pane and the event JSON viewer custom scrollbars while keeping native scrolling. Use the 1.7+ `ScrollArea.Content` pattern: `Viewport`'s implicit wrapper is deprecated.~~ ✅ | ScrollArea | `RunView.tsx`, `AgentTimeline.tsx` |
+| U11 | ~~An "Expand" button on each chart opens it full-size in a modal Dialog, which needs a `Dialog.Title` (VisuallyHidden if needed).~~ ✅ | Dialog, VisuallyHidden | `ChartsPanel` |
+| U12 | ~~Mobile (below `lg`): Activity and Results become two top-level tabs instead of the fixed 420 px column, as plan.md §7 describes. Long claims wrap, and every panel has a proper empty state.~~ ✅ | Tabs | `RunView.tsx` |
+| U13 | ~~Clarification stays inline and non-modal, so the timeline stays visible. When the run enters `awaiting_input`, focus moves to the card and the question is announced via `aria-live`. Icon-only buttons get VisuallyHidden labels.~~ ✅ | VisuallyHidden | `ClarificationCard.tsx` |
+| U14 | ~~Vitest + Testing Library tests: Tabs keyboard navigation, the AlertDialog confirm flow, Switch toggling, and the export menu. jsdom needs `ResizeObserver`, `hasPointerCapture` and `scrollIntoView` stubs for Radix. Overlaps L1.~~ ✅ | | `frontend/src/**/*.test.tsx` |
 
 **Checks and decisions**
 
 | # | Item | Owner |
 |---|---|---|
 | U15 | ~~Approve adopting Radix~~ ✅ 13 Oct: recorded as decision 22 in plan.md §18, §3 and §7 updated. | 👥 |
-| U16 | Measure the bundle after each phase against the decision-20 baseline (app shell 397 kB). 14 Oct: app shell 303.7 kB (98.6 kB gzip), unchanged by U17; fonts load as separate files. | 🤖 |
-| U17 | ✅ **Built 14 Oct** to the signed-off direction (decision 23): dark-only tokens, IBM Plex Sans + Source Serif 4, evidence underline on cited numbers, Plotly dark layout, sentence case, 11 px floor. | 👥 |
-| U18 | After each phase: `npm run lint`, `typecheck`, `build`, `test`, plus a browser walk-through of the demo script (plan.md §15) with keyboard only. | 🤖 ⏳ only the keyboard-only demo script is left (see U18 progress above) |
+| U16 | ~~Measure the bundle after each phase against the decision-20 baseline (app shell 397 kB). 14 Oct: app shell 303.7 kB (98.6 kB gzip), unchanged by U17; fonts load as separate files.~~ ✅ | 🤖 |
+| U17 | ~~✅ **Built 14 Oct** to the signed-off direction (decision 23): dark-only tokens, IBM Plex Sans + Source Serif 4, evidence underline on cited numbers, Plotly dark layout, sentence case, 11 px floor.~~ ✅ | 👥 |
+| U18 | After each phase: `npm run lint`, `typecheck`, `build`, `test`, plus a browser walk-through of the demo script (plan.md §15) with keyboard only. | 🤖 ✅ except the keyboard-only demo script, moved to Stretch 20 Oct |
 
 ### U17 visual direction: signed off and built 14 Oct
 
@@ -360,47 +414,47 @@ Each existing analysis is shown as a one-question chat. The follow-up bar stays 
 
 | # | Item | Where |
 |---|---|---|
-| CL1 | **App shell.** Replace the top nav (New analysis / History) with a collapsible left sidebar, the main column and a right Preview panel. The sidebar's open/closed state is remembered per browser; opening the preview collapses it. One sidebar toggle, in the header. A Settings gear in the header on every page. `/history` redirects to `/`. | `App.tsx`, new `components/Sidebar.tsx`, `components/ChatShell.tsx` |
-| CL2 | **Home.** Wordmark, tagline and a rounded chat bar. **+** opens a menu with: Include web context (switch) and Model (Auto / OpenAI / Google Gemini; radio items). The chosen options show as chips under the bar, with sample questions below. The System card and the chaos toggles move into a **Settings** dialog opened from the header gear (CL-e). | `pages/NewAnalysis.tsx` → `pages/Home.tsx`, `ui/dropdown-menu` (checkbox/radio items) |
-| CL3 | **Chat thread.** The question is a user bubble. The answer is today's Insights content: Verified stamp, serif summary, findings (a plain list) with the evidence underline and fact chips. Under it, one row: Preview, Copy and the Verified stamp; then follow-up suggestion chips. Export lives only in the Preview panel. **Copy and retry on every turn**, in every chat (new, existing, and old analyses shown as one-question chats): each question has Copy and "Ask this question again" under its bubble; each finished answer has Copy and Retry in its action row. A retry adds a new answer version and keeps the earlier one, with "‹ Answer 2 of 2 ›" to switch between them; a running answer shows Stop instead of Retry. "Copied" confirms a copy. Until CL9 lands, a retry starts a fresh analysis with the same question. The chat bar sits at the bottom, with a Stop button while a run is going. A clarification becomes an assistant message with suggestion chips, answered from the chat bar. | `pages/RunView.tsx` → `pages/Chat.tsx`, `ClarificationCard.tsx` |
-| CL4 | **Activity inside the answer, collapsed by default.** While running, one line reads e.g. "Step 3 of 7: collecting data from SingStat". When done it reads "Researched in 7 steps · 4 data sources · 1 note · 2 s". **Show steps** expands the 7 stages; "Open the full activity" opens the full view (artboard 4) in a dialog. The separate Agent activity panel goes away. | `AgentTimeline.tsx` → `ActivitySummary.tsx` + `ActivityDialog.tsx` |
-| CL5 | **Preview.** A split button: **Preview** opens the panel on **Report**; **▾** picks Charts, Data & quality, Report or Plan directly. The panel has the same four tabs plus Export and Close. **Export** opens a menu: Markdown (.md), PDF (.pdf) or Word (.docx); .docx needs CL16. JSON and CSV stay in the API but leave the menu. Each answer has its own preview. On a phone it opens as a full-screen sheet. | `ResultPanels.tsx` (reused as the tab bodies), new `PreviewPanel.tsx` |
-| CL6 | **Sidebar.** New chat; search; the groups above. Each row's ⋯ menu has Pin/Unpin, Rename (edited in place) and Delete (confirmed in an AlertDialog, CL-d). The active chat is highlighted. Needs CL9 for pin and rename; until then, show search and delete only. | `Sidebar.tsx` |
-| CL7 | **Phone.** Sidebar as a drawer, preview as a sheet, chat bar fixed to the bottom. Check at 390 px with no sideways scrolling, as in U18. | shell + `PreviewPanel.tsx` |
-| CL8 | **Plain-language activity.** A pure formatter `lib/activity.ts` turns events into the 7 stages (reusing `lib/stages.ts`), using a sentence template per event type and a verb per tool, e.g. `singstat_search_tables` → "Searched SingStat for “…”", `fetch_singstat` → "Downloaded … from SingStat", `singstat_get_metadata` → "Read the table's details", `make_chart` → "Drew a … chart". Fallbacks become amber "Note" lines. Quality events become a score sentence. Facts and report chunks are counted, not listed. Hand-offs mark stage boundaries. Task ids ("T1:") are stripped from thoughts. "Main steps" / "Every action" switch, with the JSON under "Technical details". Unit-tested on events recorded from the sample queries. | new `lib/activity.ts` + tests |
+| CL1 | ~~**App shell.** Replace the top nav (New analysis / History) with a collapsible left sidebar, the main column and a right Preview panel. The sidebar's open/closed state is remembered per browser; opening the preview collapses it. One sidebar toggle, in the header. A Settings gear in the header on every page. `/history` redirects to `/`.~~ ✅ | `App.tsx`, new `components/Sidebar.tsx`, `components/ChatShell.tsx` |
+| CL2 | ~~**Home.** Wordmark, tagline and a rounded chat bar. **+** opens a menu with: Include web context (switch) and Model (Auto / OpenAI / Google Gemini; radio items). The chosen options show as chips under the bar, with sample questions below. The System card and the chaos toggles move into a **Settings** dialog opened from the header gear (CL-e).~~ ✅ | `pages/NewAnalysis.tsx` → `pages/Home.tsx`, `ui/dropdown-menu` (checkbox/radio items) |
+| CL3 | ~~**Chat thread.** The question is a user bubble. The answer is today's Insights content: Verified stamp, serif summary, findings (a plain list) with the evidence underline and fact chips. Under it, one row: Preview, Copy and the Verified stamp; then follow-up suggestion chips. Export lives only in the Preview panel. **Copy and retry on every turn**, in every chat (new, existing, and old analyses shown as one-question chats): each question has Copy and "Ask this question again" under its bubble; each finished answer has Copy and Retry in its action row. A retry adds a new answer version and keeps the earlier one, with "‹ Answer 2 of 2 ›" to switch between them; a running answer shows Stop instead of Retry. "Copied" confirms a copy. Until CL9 lands, a retry starts a fresh analysis with the same question. The chat bar sits at the bottom, with a Stop button while a run is going. A clarification becomes an assistant message with suggestion chips, answered from the chat bar.~~ ✅ | `pages/RunView.tsx` → `pages/Chat.tsx`, `ClarificationCard.tsx` |
+| CL4 | ~~**Activity inside the answer, collapsed by default.** While running, one line reads e.g. "Step 3 of 7: collecting data from SingStat". When done it reads "Researched in 7 steps · 4 data sources · 1 note · 2 s". **Show steps** expands the 7 stages; "Open the full activity" opens the full view (artboard 4) in a dialog. The separate Agent activity panel goes away.~~ ✅ | `AgentTimeline.tsx` → `ActivitySummary.tsx` + `ActivityDialog.tsx` |
+| CL5 | ~~**Preview.** A split button: **Preview** opens the panel on **Report**; **▾** picks Charts, Data & quality, Report or Plan directly. The panel has the same four tabs plus Export and Close. **Export** opens a menu: Markdown (.md), PDF (.pdf) or Word (.docx); .docx needs CL16. JSON and CSV stay in the API but leave the menu. Each answer has its own preview. On a phone it opens as a full-screen sheet.~~ ✅ | `ResultPanels.tsx` (reused as the tab bodies), new `PreviewPanel.tsx` |
+| CL6 | ~~**Sidebar.** New chat; search; the groups above. Each row's ⋯ menu has Pin/Unpin, Rename (edited in place) and Delete (confirmed in an AlertDialog, CL-d). The active chat is highlighted. Needs CL9 for pin and rename; until then, show search and delete only.~~ ✅ | `Sidebar.tsx` |
+| CL7 | ~~**Phone.** Sidebar as a drawer, preview as a sheet, chat bar fixed to the bottom. Check at 390 px with no sideways scrolling, as in U18.~~ ✅ | shell + `PreviewPanel.tsx` |
+| CL8 | ~~**Plain-language activity.** A pure formatter `lib/activity.ts` turns events into the 7 stages (reusing `lib/stages.ts`), using a sentence template per event type and a verb per tool, e.g. `singstat_search_tables` → "Searched SingStat for “…”", `fetch_singstat` → "Downloaded … from SingStat", `singstat_get_metadata` → "Read the table's details", `make_chart` → "Drew a … chart". Fallbacks become amber "Note" lines. Quality events become a score sentence. Facts and report chunks are counted, not listed. Hand-offs mark stage boundaries. Task ids ("T1:") are stripped from thoughts. "Main steps" / "Every action" switch, with the JSON under "Technical details". Unit-tested on events recorded from the sample queries.~~ ✅ | new `lib/activity.ts` + tests |
 
 ### Phase B: conversations and follow-ups (backend + frontend, 🤖)
 
 | # | Item | Where |
 |---|---|---|
-| CL9 | **Chats.** New `chats` table (id, title, pinned, created_at, updated_at), plus `analyses.chat_id`, `turn` and `version` (a retry adds a version to the same turn; the newest is shown, older ones stay reachable). Existing analyses each become a one-question chat. `POST /chats/{id}/turns/{turn}/retry` re-runs a turn with the same question and the context of the turns before it. Endpoints: `POST /chats` (first question), `GET /chats?q=` (searches titles and questions; pinned first), `PATCH /chats/{id}` (title, pinned), `DELETE /chats/{id}` (cascades to its runs), `POST /chats/{id}/messages` (follow-up → new analysis in the chat). `/analyses/*` stays for single runs and exports. Needs R10 (timezone) fixed first, since the sidebar groups chats by date. | `db/models.py`, `api/chats.py`, `db/init.py` |
-| CL10 | **Follow-up context (the biggest item).** The coordinator receives the previous turns (question, executive summary, fact list, dataset keys), so it can resolve "this" or "the same years" and reuse datasets already collected instead of fetching them again. The verifier accepts facts from earlier turns as citations. Needs prompt and MockLLM policy changes, plus graph tests for one follow-up per sample query. | `agents/graph.py`, `prompts.py`, `mock_policies.py`, `verification/checks.py` |
-| CL11 | **Chat title.** Default: the first question, trimmed. Later, optionally, a short title from the fast model tier. | `api/chats.py` |
-| CL12 | **Model choice.** Make `llm_router` honour `provider_preference`: `auto` keeps the current OpenAI → Gemini chain; `openai` or `gemini` puts that provider first. Run details show the provider actually used. | `llm/router.py`, `api/schemas.py` |
-| CL16 | **Word export.** Add `format=docx` to `GET /analyses/{id}/export`, built from the structured result (title, verification line, headings, findings, limitations, sources) with `python-docx`, charts embedded as images where the PDF path already renders them. Test that every number in the .docx matches the Markdown export. | `export/docx.py`, `api/analyses.py` |
-| CL13 | **Follow-up suggestions.** Three short next questions per answer, either from the writer or built deterministically from the intent (another sector, other years, retrenchments). | writer or `agents/vocab.py` |
+| CL9 | ~~**Chats.** New `chats` table (id, title, pinned, created_at, updated_at), plus `analyses.chat_id`, `turn` and `version` (a retry adds a version to the same turn; the newest is shown, older ones stay reachable). Existing analyses each become a one-question chat. `POST /chats/{id}/turns/{turn}/retry` re-runs a turn with the same question and the context of the turns before it. Endpoints: `POST /chats` (first question), `GET /chats?q=` (searches titles and questions; pinned first), `PATCH /chats/{id}` (title, pinned), `DELETE /chats/{id}` (cascades to its runs), `POST /chats/{id}/messages` (follow-up → new analysis in the chat). `/analyses/*` stays for single runs and exports. Needs R10 (timezone) fixed first, since the sidebar groups chats by date.~~ ✅ | `db/models.py`, `api/chats.py`, `db/init.py` |
+| CL10 | ~~**Follow-up context (the biggest item).** The coordinator receives the previous turns (question, executive summary, fact list, dataset keys), so it can resolve "this" or "the same years" and reuse datasets already collected instead of fetching them again. The verifier accepts facts from earlier turns as citations. Needs prompt and MockLLM policy changes, plus graph tests for one follow-up per sample query.~~ ✅ | `agents/graph.py`, `prompts.py`, `mock_policies.py`, `verification/checks.py` |
+| CL11 | ~~**Chat title.** Default: the first question, trimmed. Later, optionally, a short title from the fast model tier.~~ ✅ default title (`api/runs.py` `title_from`); the optional LLM-written title was not built | `api/chats.py` |
+| CL12 | ~~**Model choice.** Make `llm_router` honour `provider_preference`: `auto` keeps the current OpenAI → Gemini chain; `openai` or `gemini` puts that provider first. Run details show the provider actually used.~~ ✅ | `llm/router.py`, `api/schemas.py` |
+| CL16 | ~~**Word export.** Add `format=docx` to `GET /analyses/{id}/export`, built from the structured result (title, verification line, headings, findings, limitations, sources) with `python-docx`, charts embedded as images where the PDF path already renders them. Test that every number in the .docx matches the Markdown export.~~ ✅ | `export/docx.py`, `api/analyses.py` |
+| CL13 | ~~**Follow-up suggestions.** Three short next questions per answer, either from the writer or built deterministically from the intent (another sector, other years, retrenchments).~~ ✅ | writer or `agents/vocab.py` |
 
 ### Phase C: run details for non-technical users (low priority, 🤖)
 
 | # | Item | Where |
 |---|---|---|
-| CL14 | **Run details (artboard 5).** Open from the sidebar ("Run activity") or from an answer. Lists the chat's runs; for the selected one it shows: outcome and Verified, time taken, AI model actually used (with any fallback), cost, steps and retries, each data source as Live / Saved copy / Failed, the checks, and a "Worth knowing" box (fallbacks, removed claims, low quality). The Langfuse trace link is kept only as "for engineers", and only when Langfuse is configured. | new `GET /analyses/{id}/summary`, `RunDetails.tsx` |
-| CL15 | **Why not just Langfuse:** it shows every span, prompt and token count, which is right for engineers but overwhelming for researchers. Everything artboard 5 needs is already in our own `agent_events`, `llm_calls` and the result (verification, datasets with `is_fallback`). One endpoint can aggregate it with no extra tracing cost. | design note |
+| CL14 | ~~**Run details (artboard 5).** Open from the sidebar ("Run activity") or from an answer. Lists the chat's runs; for the selected one it shows: outcome and Verified, time taken, AI model actually used (with any fallback), cost, steps and retries, each data source as Live / Saved copy / Failed, the checks, and a "Worth knowing" box (fallbacks, removed claims, low quality). The Langfuse trace link is kept only as "for engineers", and only when Langfuse is configured.~~ ✅ | new `GET /analyses/{id}/summary`, `RunDetails.tsx` |
+| CL15 | ~~**Why not just Langfuse:** it shows every span, prompt and token count, which is right for engineers but overwhelming for researchers. Everything artboard 5 needs is already in our own `agent_events`, `llm_calls` and the result (verification, datasets with `is_fallback`). One endpoint can aggregate it with no extra tracing cost.~~ ✅ applied in CL14 | design note |
 
 ### Decisions (all proposals approved 14 Oct; recorded as decision 24)
 
 | # | Question | Decision |
 |---|---|---|
-| CL-a | Is the answer in the chat the old Insights tab, so Preview only has Report, Charts, Data & quality and Plan? | ✅ Yes |
-| CL-b | When you pick OpenAI or Gemini: is that strict, or preferred with the other as fallback? | ✅ Preferred, with fallback |
-| CL-c | Should a follow-up reuse data the chat already collected, or always start a fresh run? | ✅ Reuse, and fetch only what's new |
-| CL-d | Delete: confirm in place in the sidebar, or in a dialog (today's AlertDialog)? | ✅ Dialog (mockup updated) |
-| CL-e | Demo controls: in the Settings dialog, or in the **+** menu? | ✅ Settings (mockup updated) |
-| CL-f | Record as decision 24 in plan.md and rewrite §7 (routes and layout). | ✅ Done 14 Oct |
+| CL-a | ~~Is the answer in the chat the old Insights tab, so Preview only has Report, Charts, Data & quality and Plan?~~ | ✅ Yes |
+| CL-b | ~~When you pick OpenAI or Gemini: is that strict, or preferred with the other as fallback?~~ | ✅ Preferred, with fallback |
+| CL-c | ~~Should a follow-up reuse data the chat already collected, or always start a fresh run?~~ | ✅ Reuse, and fetch only what's new |
+| CL-d | ~~Delete: confirm in place in the sidebar, or in a dialog (today's AlertDialog)?~~ | ✅ Dialog (mockup updated) |
+| CL-e | ~~Demo controls: in the Settings dialog, or in the **+** menu?~~ | ✅ Settings (mockup updated) |
+| CL-f | ~~Record as decision 24 in plan.md and rewrite §7 (routes and layout).~~ | ✅ Done 14 Oct |
 
 ## 🟢 Stretch
 
-L1 frontend unit tests (Vitest) · L2 Playwright E2E · L4 cross-provider LLM judge · L5 pgvector RAG ·
+Keyboard-only run of the demo script (plan.md §15, moved from U18 on 20 Oct) · ~~L1 frontend unit tests (Vitest)~~ ✅ 41 tests, in CI since 19 Oct · L2 Playwright E2E · L4 cross-provider LLM judge · L5 pgvector RAG ·
 L6 arq + Redis worker · L7 self-hosted Langfuse compose · L8 nightly live-LLM eval and MCP contract
-test · L9 security scans (pip-audit, npm audit, Trivy, gitleaks) · L10 Terraform remote state ·
+test · L9 security scans: ✅ pip-audit, npm audit, Trivy monthly (19 Oct); gitleaks and a Terraform IaC scan still open · L10 Terraform remote state ·
 L11 `/datasets` page and cost dashboard · L12 Alembic · Cloud Run files (documented in DEPLOYMENT.md §5).

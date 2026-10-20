@@ -248,10 +248,11 @@ The script reads everything from `terraform output`, then:
 Open the `app_url` output:
 
 - the token screen accepts your `APP_ACCESS_TOKEN`;
-- run the main sample query: the timeline should stream (WebSocket through CloudFront and the ALB);
-- export a PDF (Gotenberg sidecar);
-- the system card shows the LLM chain (OpenAI → Gemini if keys are set) and tracing status;
-- the demo controls card says the toggles are disabled on this deployment.
+- run the main sample query: the agent activity should update live (WebSocket through CloudFront and
+  the ALB);
+- export a PDF from the Preview panel (Gotenberg sidecar);
+- the **Settings** dialog (header button) shows the LLM chain (OpenAI → Gemini if keys are set) and
+  tracing status, and says the demo toggles are disabled on this deployment.
 
 Logs (same `AWS_PROFILE`): `aws logs tail /ecs/policy-analytics/api --follow` (also `/gotenberg` and `/web`).
 

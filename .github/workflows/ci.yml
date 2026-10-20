@@ -22,15 +22,17 @@ jobs:
       DATABASE_URL: sqlite+aiosqlite:///./ci.db
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: "3.12"
-          cache: pip
-      - run: pip install -e ".[dev]"
+          version: "0.12.23"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install from uv.lock (Python 3.12 from backend/.python-version)
+        run: uv sync --locked
       - name: Lint
-        run: ruff check app tests
+        run: uv run --locked ruff check app tests
       - name: Tests with coverage
-        run: pytest -m "not contract and not llm" --cov=app --cov-report=xml --cov-report=html --cov-report=term
+        run: uv run --locked pytest -m "not contract and not llm" --cov=app --cov-report=xml --cov-report=html --cov-report=term
       - uses: actions/upload-artifact@v4
         with:
           name: backend-coverage
@@ -50,6 +52,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run lint
+      - run: npm test
       - run: npm run build
 
   smoke:
@@ -64,16 +67,23 @@ jobs:
           echo "OFFLINE_MODE=true" >> .env
           echo "WEB_SEARCH_PROVIDER=mock" >> .env
           docker compose up -d --build
-      - name: Run one analysis end-to-end
+      - name: Run a chat with a follow-up end-to-end
         run: |
+          API=http://localhost:8000/api/v1
+          wait_done() {  # poll the chat until its newest run has finished
+            for i in $(seq 1 60); do
+              STATUS=$(curl -sf $API/chats/$1 | jq -r .status)
+              echo "status=$STATUS"; [ "$STATUS" = "completed" ] && return 0
+              [ "$STATUS" = "failed" ] && return 1; sleep 3
+            done; return 1
+          }
           for i in $(seq 1 40); do curl -sf http://localhost:8000/readyz && break; sleep 3; done
-          ID=$(curl -sf -X POST http://localhost:8000/api/v1/analyses -H 'Content-Type: application/json' \
+          ID=$(curl -sf -X POST $API/chats -H 'Content-Type: application/json' \
                -d '{"query":"Analyse employment trends in the technology sector from 2020-2024"}' | jq -r .id)
-          for i in $(seq 1 60); do
-            STATUS=$(curl -sf http://localhost:8000/api/v1/analyses/$ID | jq -r .status)
-            echo "status=$STATUS"; [ "$STATUS" = "completed" ] && exit 0
-            [ "$STATUS" = "failed" ] && exit 1; sleep 3
-          done; exit 1
+          wait_done $ID || exit 1
+          curl -sf -X POST $API/chats/$ID/messages -H 'Content-Type: application/json' \
+               -d '{"query":"What about finance?"}' | jq -e '.turns == 2' >/dev/null || exit 1
+          wait_done $ID || exit 1
       - if: failure()
         run: docker compose logs --tail=200
 

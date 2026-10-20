@@ -5,11 +5,11 @@
 ```mermaid
 flowchart TB
     subgraph Browser
-        UI["React + TypeScript SPA<br/>NewAnalysis · RunView · History"]
+        UI["React + TypeScript SPA<br/>Home · Chat · Run activity"]
     end
     subgraph Compose / ECS
         NG["nginx<br/>static SPA, proxies /api and /ws"]
-        API["FastAPI<br/>REST /api/v1 · WS /ws/analyses/{id}<br/>access token · rate limit · problem+json"]
+        API["FastAPI<br/>REST /api/v1 (chats, analyses) · WS /ws/analyses/{id}<br/>access token · rate limit · problem+json"]
         RUN["TaskRunner<br/>one asyncio task per analysis"]
         BUS["Event bus<br/>(in-process pub/sub)"]
         G["LangGraph pipeline<br/>+ MemorySaver checkpoints"]
@@ -35,8 +35,11 @@ flowchart TB
     G -.-> LF
 ```
 
-A run starts with `POST /api/v1/analyses`. The API stores an `analyses` row and hands the run to the
-`TaskRunner`, which executes the graph as a background asyncio task and returns 202 immediately. Every
+The UI is a chat. The first question creates a chat (`POST /api/v1/chats`); each follow-up
+(`POST /chats/{id}/messages`) or retry (`POST /chats/{id}/turns/{n}/retry`) adds a turn to it. Every turn
+is one analysis run: the API stores an `analyses` row (with its chat, turn and version) and hands the run to
+the `TaskRunner`, which executes the graph as a background asyncio task, and the API returns 202 immediately.
+`POST /api/v1/analyses` still works for a single run and creates a one-question chat. Every
 step the agents take is emitted as an `AgentEvent`. Each event is persisted to `agent_events` and
 published on the bus, and the WebSocket relays it to the browser. A client that reconnects replays
 missed events with `GET /events?after=<seq>`, so the timeline never has gaps.
@@ -48,10 +51,10 @@ sequenceDiagram
     participant Runner as TaskRunner
     participant Graph as LangGraph
     participant DB as PostgreSQL
-    UI->>API: POST /api/v1/analyses {query}
-    API->>DB: insert analyses(status=queued)
-    API->>Runner: start(run_id)
-    API-->>UI: 202 {id}
+    UI->>API: POST /api/v1/chats {query}
+    API->>DB: insert chats, analyses(turn=1, status=queued)
+    API->>Runner: start(run_id, earlier turns)
+    API-->>UI: 202 {chat, turns}
     UI->>API: WS /ws/analyses/{id}
     Runner->>Graph: ainvoke({query}, thread_id=run_id)
     loop every agent step
@@ -93,6 +96,13 @@ observations, so the agent can recover by trying another table or source. Exceed
 forces a finish with partial results and a warning event. A JSON step format, rather than
 provider-native tool calling, keeps the loop identical on OpenAI, Gemini and the MockLLM, and makes the
 thought an explicit field the UI can show.
+
+**Follow-up questions**: a follow-up turn receives the earlier turns of its chat (`runner/followup.py`).
+Their text feeds `interpret` and `write`, so "what about finance?" inherits the sector, metric and years.
+Earlier facts are carried over and flagged, and while the earlier runs are still in memory (the last 25),
+their datasets are too, so `fetch_singstat` reuses a table that already covers the request and fetches
+only what is new. Suggested follow-up questions are built deterministically from the answered intent
+(`agents/suggestions.py`), with no LLM call.
 
 **State split**: LangGraph state holds only small, serialisable values (intent, plan, counters, feedback).
 DataFrames, Facts and charts live in a per-run `RunContext`, so checkpoints stay small and a clarification
@@ -175,14 +185,25 @@ How these are tested and how well they work: [TESTING.md](TESTING.md).
 
 ```mermaid
 erDiagram
+    chats ||--o{ analyses : "turns and versions"
     analyses ||--o{ agent_events : emits
     analyses ||--o{ facts : computes
     analyses ||--o{ charts : draws
     analyses ||--o{ quality_reports : checks
     analyses ||--o| reports : writes
     analyses ||--o{ llm_calls : spends
+    chats {
+        string id PK
+        string title "first question, trimmed; renamable"
+        bool pinned
+        datetime created_at
+        datetime updated_at
+    }
     analyses {
         string id PK
+        string chat_id FK
+        int turn "question number in the chat"
+        int version "a retry adds a version"
         string query
         string status "queued|running|awaiting_input|completed|partial|failed|cancelled"
         json options
@@ -253,7 +274,8 @@ erDiagram
     }
 ```
 
-The mock internal systems live in the same database as `internal_programme_enrolments` and
+All timestamps use a `UTCDateTime` column type, so they come back timezone-aware on SQLite as well as
+PostgreSQL. The mock internal systems live in the same database as `internal_programme_enrolments` and
 `internal_grant_disbursements`, seeded deterministically. The schema is created with `create_all` by the
 `migrate` service (`python -m app.db.init`); Alembic would be the next step once the schema has to evolve
 in place.

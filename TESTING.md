@@ -22,25 +22,30 @@ The design makes most of the system deterministic, so most of it can be tested e
 | Unit: config | Placeholder detection, provider and env-var aliases, whitespace, chaos-admin gating, DB URL composition | `tests/unit/test_config.py` | 21 |
 | Integration: multi-agent workflows | Full graph through the real task runner: main query, every claim traced to a fact, consistency, injected hallucination → rewrite, clarification → resume, correlation on internal data, forecast labelling, all sources down → snapshots, quarterly data annualised, clarified metric is the one analysed | `tests/integration/test_graph.py` | 10 |
 | API | Health and readiness, create → poll → export (md/json/csv), event replay with `after`, validation and 404, clarify conflicts, chaos toggles locally and refused on AWS, access token, provider status | `tests/api/test_api.py` | 9 |
+| API: chats | Chat titles, follow-ups that inherit context and reuse downloaded data, turns and versions, retry keeps the old answer, one question at a time, pin/rename/search/delete, legacy runs as one-question chats, provider preference, follow-up suggestions, run summary | `tests/api/test_chats.py` | 12 |
+| API: run activity | Week/month/year boundaries, the viewer's time zone (unknown zones fall back to UTC), status counts and running totals, no periods before the first run | `tests/api/test_activity.py` | 7 |
+| WebSocket | Replay ends with a `replay_done` marker after the last stored event | `tests/api/test_ws.py` | 1 |
+| Export: Word | Every number in the .docx matches the Markdown export | `tests/unit/test_docx_export.py` | 1 |
 | Evaluation: hallucination detection | 150 injected hallucinations across 4 sample queries (section 3) | `tests/eval/test_hallucination_eval.py` | 1 |
 | Load | Locust, 50 users for 2 minutes against the Docker stack | `tests/load/locustfile.py` | (section 6) |
-| Frontend | ESLint, `tsc` type check, production build; the full flow checked in a browser | CI `frontend` job | |
-| End to end | Docker Compose stack started in CI, one analysis run to completion | CI `smoke` job | |
+| Frontend (Vitest + Testing Library) | Sidebar grouping, rename and confirmed delete; chat bar; answer versions and retry; clarification focus; Radix wrappers (tabs keyboard navigation, dialogs, switch, menus, progress, toasts); plain-language activity sentences on recorded runs; evidence underline; stage progress; replay watermark; Run activity page | `frontend/src/**/*.test.ts(x)` | 41 |
+| Frontend: static | ESLint, `tsc` type check, production build; the full flow checked in a browser | CI `frontend` job | |
+| End to end | Docker Compose stack started in CI; a chat's first question and a follow-up both run to completion through `/chats` | CI `smoke` job | |
 
 ## 2. How to run
 
-On macOS/Linux, replace `.venv/Scripts/` with `.venv/bin/` (or just use the `make` targets, which pick the
-right one).
+The backend environment comes from `backend/uv.lock` (`uv sync`, or `make install`); `uv run` works the
+same on Windows, macOS and Linux.
 
 ```bash
 cd backend
-.venv/Scripts/pytest -m "not contract and not llm" --cov=app --cov-report=term --cov-report=html
-.venv/Scripts/pytest tests/integration                      # one level
-.venv/Scripts/pytest tests/unit/test_verifier.py::test_injected_wrong_number_fails
-.venv/Scripts/pytest tests/eval -s                          # prints the evaluation table
-.venv/Scripts/ruff check app tests
+uv run pytest -m "not contract and not llm" --cov=app --cov-report=term --cov-report=html
+uv run pytest tests/integration                             # one level
+uv run pytest tests/unit/test_verifier.py::test_injected_wrong_number_fails
+uv run pytest tests/eval -s                                 # prints the evaluation table
+uv run ruff check app tests
 
-cd frontend && npm run lint && npm run typecheck && npm run build
+cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 
 make load-stack   # restart the api offline, on MockLLM, tracing off, rate limit raised
 make load         # Locust headless: 50 users, ramp 10/s, 2 minutes
@@ -51,11 +56,14 @@ excluded from CI.
 
 **CI** (`.github/workflows/ci.yml`) runs on every push and pull request:
 
-1. backend: ruff, then pytest with coverage (XML and HTML report uploaded as an artefact);
-2. frontend: ESLint, type check and build;
-3. smoke: `docker compose up --build` with MockLLM and offline snapshots, then one analysis via the API
-   must reach `completed`;
+1. backend: `uv sync --locked` (fails if `uv.lock` is out of date with `pyproject.toml`), ruff, then pytest
+   with coverage (XML and HTML report uploaded as an artefact);
+2. frontend: ESLint, Vitest, type check and build;
+3. smoke: `docker compose up --build` with MockLLM and offline snapshots, then a chat is started via
+   `POST /chats`, a follow-up is sent to `/chats/{id}/messages`, and both runs must reach `completed`;
 4. images: on `main`, push the backend and frontend images to GHCR.
+
+A separate monthly workflow scans dependencies and images for known vulnerabilities (section 9).
 
 ## 3. Hallucination detection
 
@@ -155,31 +163,38 @@ every report and action.
 
 ## 6. Performance and load
 
-Run: `make load-stack && make load`. That is the Docker Compose stack on a Windows 11 laptop (Docker
-Desktop), API offline on MockLLM with tracing off, 50 users ramping at 10 per second for 2 minutes, and
-1-3 s think time per user.
+Run: `make load-stack && make load`. That is the Docker Compose stack on a Mac laptop (Docker Desktop,
+re-run 20 Oct), API offline on MockLLM with tracing off, 50 users ramping at 10 per second for 2 minutes,
+and 1-3 s think time per user. The traffic follows the chat app: list chats, open a chat, start a chat and
+send follow-ups, plus the per-run reads (detail, event replay). A follow-up that gets 409 (the chat's
+previous question is still running) is expected under load and counted as a success.
 
 | Endpoint | Requests | Failures | Median | p95 | p99 |
 |---|---|---|---|---|---|
-| GET /analyses (history) | 1,286 | 0 | 10 ms | 63 ms | 110 ms |
-| GET /analyses/{id} | 808 | 0 | 5 ms | 22 ms | 100 ms |
-| GET /analyses/{id}/events | 416 | 0 | 12 ms | 35 ms | 100 ms |
-| GET /readyz | 183 | 0 | 13 ms | 46 ms | 140 ms |
-| POST /analyses (starts a run) | 211 | 0 | 52 ms | 66 ms | 100 ms |
-| **All** | **2,904** | **0** | **10 ms** | **58 ms** | **110 ms** |
+| GET /chats | 956 | 0 | 15 ms | 44 ms | 71 ms |
+| GET /chats/{id} | 807 | 0 | 4 ms | 24 ms | 46 ms |
+| GET /analyses/{id} | 359 | 0 | 4 ms | 16 ms | 35 ms |
+| GET /analyses/{id}/events | 292 | 0 | 8 ms | 30 ms | 52 ms |
+| GET /readyz | 158 | 0 | 9 ms | 32 ms | 43 ms |
+| POST /chats (starts a run) | 177 | 0 | 5 ms | 25 ms | 51 ms |
+| POST /chats/{id}/messages (follow-up) | 161 | 0 | 9 ms | 35 ms | 62 ms |
+| **All** | **2,910** | **0** | **9 ms** | **35 ms** | **57 ms** |
 
-Throughput was 24.4 requests/s, bounded by the users' think time rather than the server. All 211
-analyses started during the test **completed**, while the API stayed at about 210 MiB. Finished runs
-beyond the last 25 are evicted from memory, so it doesn't grow with history. The offline/mock setup
-measures the platform rather than LLM latency, and avoids hammering government APIs.
+Throughput was 24.6 requests/s, bounded by the users' think time rather than the server. `GET /chats` is
+the slowest read because it queries each chat's runs one chat at a time. Not re-measured in this run:
+whether every started run completed, and the API's memory use (7 Oct: all 211 runs completed, about
+210 MiB; finished runs beyond the last 25 are evicted from memory, so it doesn't grow with history). The
+offline/mock setup measures the platform rather than LLM latency, and avoids hammering government APIs.
+The earlier 7 Oct run (2,904 requests, 0 failures, p95 58 ms) used the legacy `/analyses` endpoints and a
+different request mix, so the two are not directly comparable.
 
 ## 7. Coverage
 
-Backend line coverage: **82%** (3,363 statements, 143 tests, about 40 s). Highlights:
+Backend line coverage: **83%** (3,876 statements, 164 tests, about a minute; measured 19 Oct). Highlights:
 
 | Module | Coverage |
 |---|---|
-| `agents/graph.py` | 97% |
+| `agents/graph.py` | 98% |
 | `llm/router.py` | 96% |
 | `quality/checks.py` | 95% |
 | `verification/checks.py` | 95% |
@@ -196,15 +211,48 @@ one-off scripts. The HTML report is uploaded by CI as the `backend-coverage` art
   Gotenberg OK.
 - Browser walk-through: sample question → live timeline over WebSocket → insights with fact citations →
   charts → data & quality → report → plan → history; clarification card → resume; demo toggles.
+- Chat layout (14-15 Oct, MockLLM, offline, DOM-level checks): Home, sidebar, a follow-up question
+  answered with its own facts, the Preview panel, the activity dialog, run details and Run activity, plus
+  a 390 px viewport (drawer and preview sheet, no sideways scroll).
 - Exports: Markdown, JSON, CSV (zip) and PDF (Gotenberg, about 4.5 s).
 - Failure scenarios against the running stack: MCP down → REST; MCP and REST down → snapshots;
   Data.gov.sg down → snapshot; injected hallucination → rewrite. A real MCP rate-limit block (403 from
   CloudFront) led to the per-transport circuit breaker.
 
-## 9. Not yet covered
+## 9. Security scanning (CVEs)
+
+`.github/workflows/security.yml` runs at 02:00 UTC on the 1st of every month, and on demand from the
+Actions tab:
+
+| Job | Tool | Scans | Fails on |
+|---|---|---|---|
+| python | `pip-audit` | runtime packages pinned in `backend/uv.lock` (exported with hashes) | any known vulnerability |
+| node | `npm audit` | `frontend/package-lock.json`, dev tooling included | high or critical |
+| images | Trivy | the built backend and frontend images: OS packages and installed Python packages | high or critical with a fix available |
+
+Findings appear in the run summary. GitHub emails a failed scheduled run to whoever last changed the
+workflow's cron line. The same checks run locally:
+
+```bash
+cd backend && uv export --locked --no-dev --no-emit-project -o req.txt && uvx pip-audit -r req.txt --disable-pip
+cd frontend && npm audit --audit-level=high
+```
+
+First local run (19 Oct, same tools and versions as the workflow):
+
+| Scan | Result |
+|---|---|
+| pip-audit, `uv.lock` runtime packages | no known vulnerabilities |
+| Trivy, backend image (Debian 13 + `/opt/venv`) | 0 high or critical |
+| Trivy, frontend image | **55 fixable (2 critical, 53 high)**, all in the `nginx:1.27-alpine` base (Alpine 3.21.3): OpenSSL, curl, expat, libpng, libxml2, musl, zlib and others. **Fixed the same day:** `nginx:1.30-alpine` (Alpine 3.24) plus `apk upgrade` in the Dockerfile → 0 |
+| npm audit | 2 critical, 1 high, 5 moderate. The critical and high ones are dev tooling (vitest and its tinypool dependency, vite); the shipped bundle only had a moderate react-router advisory. **Fixed the same day:** vite 7.3.7, vitest 4.1.12, @vitejs/plugin-react 5.2, react-router-dom 7.18.4 → 0 vulnerabilities |
+
+After the fixes, every job of the scan passes locally.
+
+## 10. Not yet covered
 
 - Live-provider evaluation (`-m llm`): run the golden queries on OpenAI and Gemini and compare
   intents, plans and verification rates. It needs keys and costs money, so it is not in CI.
 - Contract test against the live SingStat MCP `tools/list` (`-m contract`), intended as a nightly job.
-- Frontend unit tests (Vitest) and browser E2E (Playwright). The CI smoke job covers the API path
-  end to end.
+- Browser E2E (Playwright). The CI smoke job covers the chat API path end to end, and Vitest covers the
+  components.
