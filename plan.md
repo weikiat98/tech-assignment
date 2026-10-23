@@ -1,5 +1,8 @@
 # Plan: Agentic Policy Data Analytics Platform
 
+> **About this file:** the source of truth for every design decision: what the brief asks for, the chosen design,
+> and the decisions log (§18). Check it before making design choices and record new decisions here.
+
 Source brief: `FSE_techassessment.txt`
 
 ---

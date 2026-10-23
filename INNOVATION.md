@@ -2,6 +2,9 @@
 
 # Evolving the platform for secure government research
 
+> **About this file:** proposals for taking the platform further for secure government use: trust and
+> explainability, resilience, and identity and least privilege, built on what the implementation already does.
+
 Building this platform taught me that the hard part of agentic analytics is not getting a model to
 write a report. It is making a researcher able to **trust** that report, and keeping the system
 working when real government data and services misbehave. My proposals build on the mechanisms that

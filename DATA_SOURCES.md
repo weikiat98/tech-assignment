@@ -1,5 +1,8 @@
 # Data sources
 
+> **About this file:** the data sources the Extraction agent uses (SingStat, Data.gov.sg, MOM, internal SQL,
+> the web): how each is accessed, its format, auth, fallbacks and trust level.
+
 Five sources feed the Extraction agent. Together they cover JSON APIs (MCP and REST), CSV, Excel, SQL
 and HTML. All of them normalise to one canonical long format (`source_id, dataset_id, series,
 series_code, period, period_start, frequency, value, unit`) with provenance attached: URL, retrieval

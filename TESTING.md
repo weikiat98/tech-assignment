@@ -1,5 +1,8 @@
 # Testing
 
+> **About this file:** how the platform is tested: strategy, how to run the suites, hallucination-detection
+> results, accuracy, data quality, load test, coverage, CI jobs and the monthly CVE scan, and what is not yet covered.
+
 ## 1. Strategy
 
 The design makes most of the system deterministic, so most of it can be tested exactly:
@@ -63,7 +66,8 @@ excluded from CI.
    `POST /chats`, a follow-up is sent to `/chats/{id}/messages`, and both runs must reach `completed`;
 4. images: on `main`, push the backend and frontend images to GHCR.
 
-A separate monthly workflow scans dependencies and images for known vulnerabilities (section 9).
+A separate monthly workflow scans dependencies and images for known vulnerabilities (section 9). How the
+three workflows fit together: [ARCHITECTURE.md §10](ARCHITECTURE.md).
 
 ## 3. Hallucination detection
 

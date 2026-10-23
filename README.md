@@ -1,5 +1,8 @@
 # OWL: Agentic Policy Data Analytics Platform
 
+> **About this file:** the project overview and entry point: what OWL does, how to set it up and run it
+> (Docker, local dev, CLI), and links to the other documents.
+
 ## Summary
 
 OWL is an agentic data analytics platform consisting of a team of agents plans the work, pulls official data from Singapore government sources, checks and cleans it, computes the statistics, and writes a cited report. When a policy researcher asks a question in plain English, e.g. *"Analyse employment trends in the technology sector from 2020-2024"*, the researcher watches every reasoning step live, and every number in the report is checked against the computation that
@@ -13,19 +16,31 @@ produced it before the report is shown.
 | LLMs | OpenAI and Google Gemini behind one router: per-task model tiers, fallback chain, circuit breaker, per-run budget cap, cost tracking. A scripted MockLLM makes the whole app run with no keys |
 | Stack | FastAPI + LangGraph · PostgreSQL · React 18 + TypeScript (Vite) · Plotly · Gotenberg (PDF) · Docker Compose · GitHub Actions · Terraform for AWS ECS Fargate |
 
-For more details, please see the table and relevant documents accordingly.
+## Where to start
 
-| Name | Description |
-|---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Technical documentaton of architecture designs. |
-| [DATA_SOURCES.md](DATA_SOURCES.md) | Data Source documentation that agents query from. |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | User Guide for deploying app and services for AWS, docker, terraform. |
-| [TESTING.md](TESTING.md) | Scenario testing document for local offline deployment. |
+New here? Read the documents in this order. Skip any step you don't need.
+
+| # | Document | Read it to | Time |
+|---|---|---|---|
+| 1 | This README | Learn what OWL is and run it locally (Docker, local dev, CLI) | 5 min |
+| 2 | [ARCHITECTURE.md](ARCHITECTURE.md) | Understand how it works: components, agents and pipeline, data flow, LLM routing, hallucination controls, database, CI/CD | 15 min |
+| 3 | [FRONTEND.md](FRONTEND.md) | Understand the web app: routes, how it talks to the API and WebSocket, how an answer appears on screen, run and test it | 10 min |
+| 4 | [DATA_SOURCES.md](DATA_SOURCES.md) | See where the data comes from and how each source is accessed | 5 min |
+| 5 | [TESTING.md](TESTING.md) | See how correctness is proven: hallucination detection, load test, CI jobs, CVE scan | 10 min |
+| 6 | [DEPLOYMENT.md](DEPLOYMENT.md) | Deploy to AWS (SSO setup, Terraform, secrets, deploy, pause and destroy). Read it when you deploy | 10 min to read |
+| 7 | [INNOVATION.md](INNOVATION.md) | Read proposals for taking the platform further for secure government use (optional) | 5 min |
+
+For contributors: [plan.md](plan.md) is the source of truth for design decisions (decisions log in §18),
+and [todo.md](todo.md) lists open items and the current AWS state.
+
+**By goal:** *try it* → this README, then `make up` · *evaluate the design* → README, ARCHITECTURE, TESTING ·
+*deploy it* → README, DEPLOYMENT, then todo.md for what is currently up or down.
 
 ## Table of contents
 
 | Name | Description |
 |---|---|
+| [Where to start](#where-to-start) | Which document to read first, in order |
 | [Architecture at a glance](#architecture-at-a-glance) | Diagram of the agent pipeline, data sources and supporting services |
 | [Quick start (Docker, no keys needed)](#quick-start-docker-no-keys-needed) | Run the full stack with `make up`, using the scripted MockLLM |
 | [Turning on real LLMs, tracing and web search](#turning-on-real-llms-tracing-and-web-search) | Add OpenAI/Gemini, Langfuse and web search keys to `.env` |
